@@ -1,0 +1,75 @@
+<%- include('../partials/header') %>
+
+<main class="game-container">
+    <div class="game-header">
+        <div class="activity-info">
+            <h1><%= activity.Title %></h1>
+            <p><%= activity.Description %></p>
+        </div>
+        <div class="stats-bar">
+            <div class="stat-badge xp-badge">
+                <span class="icon">⭐</span>
+                <span id="xpCounter"><%= studentStats.TotalXP %></span> XP
+            </div>
+            <div class="stat-badge coins-badge">
+                <span class="icon">🪙</span>
+                <span id="coinsCounter"><%= studentStats.TotalCoins || 0 %></span>
+            </div>
+            <div class="stat-badge level-badge">
+                <span class="icon">🏆</span> Nvl <span id="levelCounter"><%= studentStats.Level %></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="pragmatics-workspace">
+        <div class="map-section">
+            <h2 class="section-title">Mapa Urbano</h2>
+            <div class="urban-map">
+                <% questions.forEach(q => { %>
+                    <div class="map-zone" data-media="<%= q.MediaUrl %>">
+                        <div class="zone-icon">
+                            <% if (q.MediaUrl === 'park') { %> 🌳 Parque
+                            <% } else if (q.MediaUrl === 'library') { %> 📚 Biblioteca
+                            <% } else if (q.MediaUrl === 'train_station') { %> 🚆 Estación
+                            <% } else if (q.MediaUrl === 'office') { %> 🏢 Oficina
+                            <% } else if (q.MediaUrl === 'hospital') { %> 🏥 Hospital
+                            <% } else { %> 📍 <%= q.MediaUrl %> <% } %>
+                        </div>
+                        <div class="drop-zone" data-question-id="<%= q.QuestionID %>">
+                            <span class="drop-placeholder">Coloca un aviso aquí</span>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <div class="signs-section">
+            <h2 class="section-title">Avisos Disponibles</h2>
+            <div class="signs-container" id="signsContainer">
+                <% 
+                let shuffledQuestions = [...questions].sort(() => 0.5 - Math.random());
+                shuffledQuestions.forEach(q => { 
+                    const correctOpt = q.Options.find(o => o.IsCorrect);
+                %>
+                    <div class="draggable-sign" draggable="true" data-option-id="<%= correctOpt.OptionID %>">
+                        <div class="sign-content">
+                            <%= q.QuestionText %>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-actions">
+        <button id="submitBtn" class="btn-primary" disabled>Validar Ubicaciones</button>
+    </div>
+
+</main>
+
+<script>
+    const activityId = <%= activity.ActivityID %>;
+    const totalQuestions = <%= questions.length %>;
+</script>
+
+<%- include('../partials/footer') %>

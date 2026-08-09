@@ -1,0 +1,71 @@
+<%- include('../partials/header') %>
+
+<main class="game-container">
+    <div class="game-header">
+        <div class="activity-info">
+            <h1><%= activity.Title %></h1>
+            <p><%= activity.Description %></p>
+        </div>
+        <div class="stats-bar">
+            <div class="stat-badge xp-badge">
+                <span class="icon">⭐</span>
+                <span id="xpCounter"><%= studentStats.TotalXP %></span> XP
+            </div>
+            <div class="stat-badge coins-badge">
+                <span class="icon">🪙</span>
+                <span id="coinsCounter"><%= studentStats.TotalCoins || 0 %></span>
+            </div>
+            <div class="stat-badge level-badge">
+                <span class="icon">🏆</span> Nvl <span id="levelCounter"><%= studentStats.Level %></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grammar-workspace">
+        <div class="circuit-board">
+            <% questions.forEach((q, index) => { %>
+                <div class="circuit-row" data-question-id="<%= q.QuestionID %>">
+                    <div class="power-source">
+                        <div class="energy-node"></div>
+                    </div>
+                    <div class="circuit-line"></div>
+                    <div class="circuit-component">
+                        <div class="sentence-box">
+                            <% 
+                                const parts = q.QuestionText.split('_______'); 
+                            %>
+                            <span class="text-part"><%= parts[0] %></span>
+                            <div class="socket empty" data-question-id="<%= q.QuestionID %>">
+                                <span class="placeholder">...</span>
+                            </div>
+                            <span class="text-part"><%= parts[1] %></span>
+                        </div>
+                        <div class="options-rack">
+                            <% q.Options.forEach(opt => { %>
+                                <button class="chip-btn" data-option-id="<%= opt.OptionID %>">
+                                    <%= opt.OptionText %>
+                                </button>
+                            <% }) %>
+                        </div>
+                    </div>
+                    <div class="circuit-line output-line"></div>
+                    <div class="power-receiver">
+                        <div class="energy-node receiver"></div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+
+    <div class="game-actions">
+        <button id="submitBtn" class="btn-primary" disabled>Energizar Circuitos</button>
+    </div>
+
+</main>
+
+<script>
+    const activityId = <%= activity.ActivityID %>;
+    const totalQuestions = <%= questions.length %>;
+</script>
+
+<%- include('../partials/footer') %>

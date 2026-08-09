@@ -1,0 +1,68 @@
+<%- include('../partials/header') %>
+
+<div class="vocab-game-container">
+  <div class="factory-header">
+    <div class="game-stats">
+      <div class="game-stat factory-level">
+        <span class="factory-icon">🏭</span> Nivel <span id="factoryLevel">1</span>
+      </div>
+      <div class="game-stat">
+        <span>🪙</span> <span id="coinCount">0</span> monedas
+      </div>
+      <div class="game-stat">
+        Pares: <span id="matchedCount">0</span>/<span id="totalPairsDisplay"><%= questions.length %></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="factory-progress">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <div class="play-area">
+    <div class="columns-container">
+      <!-- Spanish Column -->
+      <div class="word-column" id="spanishWords">
+        <h3 class="column-title">Español</h3>
+        <% questions.forEach(q => { %>
+          <div class="word-chip" data-pair-id="<%= q.QuestionID %>" data-side="spanish" id="sp-<%= q.QuestionID %>">
+            <%= q.QuestionText %>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- English Column (shuffled) -->
+      <div class="word-column" id="englishWords">
+        <h3 class="column-title">Inglés</h3>
+        <% shuffledOptions.forEach(opt => { %>
+          <div class="word-chip" data-pair-id="<%= opt.questionId %>" data-side="english" id="en-<%= opt.OptionID %>">
+            <%= opt.OptionText %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="game-controls">
+    <button class="btn btn-primary" id="submitVocab" disabled style="display:none;">Completar Nivel</button>
+  </div>
+</div>
+
+<!-- Modal for Completion -->
+<div id="completionModal" class="battle-modal" style="display:none;">
+  <div class="modal-content" style="background:#111827; padding:2rem; border-radius:12px; border:2px solid var(--color-gold); text-align:center; max-width:400px; margin:auto;">
+    <h2 class="victory-title" style="color:var(--color-gold); font-size:2.5rem; margin-bottom:1rem;">¡Nivel Completado!</h2>
+    <div class="rewards-box" style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:8px; margin-bottom:1.5rem;">
+      <div style="font-size:1.2rem; margin-bottom:0.5rem;">✨ XP Ganada: <span id="modalXP" style="font-weight:bold; color:var(--color-primary);">0</span></div>
+      <div style="font-size:1.2rem;">🪙 Monedas: <span id="modalCoins" style="font-weight:bold; color:var(--color-gold);">0</span></div>
+    </div>
+    <a href="/student" class="btn btn-primary">Volver al Mapa</a>
+  </div>
+</div>
+
+<script>
+  const ACTIVITY_ID = "<%= activity.ActivityID %>";
+  const TOTAL_PAIRS = Number("<%= questions.length %>");
+</script>
+
+<%- include('../partials/footer') %>

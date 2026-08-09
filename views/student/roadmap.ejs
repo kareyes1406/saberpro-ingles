@@ -1,0 +1,91 @@
+<%- include('../partials/header') %>
+
+<div class="roadmap-wrapper">
+  <!-- Main Roadmap -->
+  <div class="roadmap-container">
+    <div class="path-line"></div>
+    <div class="path-progress" id="pathProgress"></div>
+    
+    <h1 style="text-align:center;margin-bottom:0.5rem;">Ruta de Aprendizaje</h1>
+    <p style="text-align:center;color:var(--text-secondary);margin-bottom:2rem;">Inglés Saber Pro — 12 Semanas</p>
+    
+    <div class="nodes-grid">
+      <% weeks.forEach((week, index) => { %>
+        <div class="week-row">
+          <div class="week-node 
+            <%= week.isCompleted ? 'completed' : (week.isAvailable ? 'available' : 'locked') %>
+            <%= week.isBossWeek ? 'boss-node' : '' %>"
+            data-week-id="<%= week.WeekID %>"
+            data-week-number="<%= week.WeekNumber %>">
+            
+            <div class="node-circle">
+              <% if (week.isBossWeek) { %>
+                <span>💀</span>
+              <% } else if (week.isCompleted) { %>
+                <span>✓</span>
+              <% } else { %>
+                <span><%= week.WeekNumber %></span>
+              <% } %>
+            </div>
+            
+            <div class="node-info">
+              <% if (week.isBossWeek) { %>
+                <span style="color:var(--color-error);font-weight:700;font-size:0.75rem;text-transform:uppercase;">⚔️ CORTE <%= week.WeekNumber === 4 ? 1 : week.WeekNumber === 8 ? 2 : 3 %></span>
+              <% } %>
+              <h4>Semana <%= week.WeekNumber %></h4>
+              <p><%= week.Title %></p>
+              <p style="font-size:0.8rem;">
+                <% if (week.isCompleted) { %>
+                  <a href="<%= week.activityLink %>" style="color:var(--accent-cyan); text-decoration:none; font-weight:600; font-size:0.85rem;">✅ Completada (Ver)</a>
+                <% } else if (week.isAvailable) { %>
+                  <a href="<%= week.activityLink %>" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.85rem;">Comenzar →</a>
+                <% } else { %>
+                  🔒 Bloqueada
+                <% } %>
+              </p>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+  
+  <!-- Stats Sidebar -->
+  <div class="stats-sidebar">
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-value" id="xpValue"><%= studentStats.TotalXP %></div>
+      <div class="stat-label">XP Total</div>
+    </div>
+    <div class="stat-card streak">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-value" id="streakValue"><%= studentStats.CurrentStreak %></div>
+      <div class="stat-label">Días de Racha</div>
+    </div>
+    <div class="stat-card coins">
+      <div class="stat-icon">🪙</div>
+      <div class="stat-value" id="coinsValue"><%= studentStats.TotalCoins %></div>
+      <div class="stat-label">Monedas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏅</div>
+      <div class="stat-value"><%= studentStats.Level %></div>
+      <div class="stat-label">Nivel</div>
+    </div>
+    
+    <!-- Badges Section -->
+    <div class="stat-card" style="text-align:left;">
+      <h4 style="margin-bottom:0.75rem;">🏆 Medallas</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+        <% badges.forEach(badge => { %>
+          <div <%- `style="text-align:center; opacity: ${badge.earned ? 1 : 0.3};"` %> title="<%= badge.BadgeName %>: <%= badge.Description %>">
+            <div style="font-size:1.5rem;"><%= badge.IconUrl || '🏆' %></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);"><%= badge.BadgeName %></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

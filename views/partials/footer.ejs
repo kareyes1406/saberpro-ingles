@@ -1,0 +1,23 @@
+    </main>
+    
+    <footer style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.75rem;">
+        SaberPro Inglés v1.0 — Plataforma de Preparación Gamificada © 2026
+    </footer>
+
+    <!-- Mascota Interactiva (Husky) -->
+    <% if (typeof user !== 'undefined' && user) { %>
+    <div id="mascotaContainer">
+        <div id="mascotaTooltip"></div>
+        <img id="mascotaImg" src="/img/mascota/idle.png" alt="Mascota Husky">
+    </div>
+    <% } %>
+
+    <!-- Shared Modals & Mascota CSS/JS -->
+    <link rel="stylesheet" href="/css/modals.css">
+    <script src="/js/mascotaController.js"></script>
+    
+    <% if (typeof jsFile !== 'undefined' && jsFile) { %>
+        <script src="/js/<%= jsFile %>"></script>
+    <% } %>
+</body>
+</html>

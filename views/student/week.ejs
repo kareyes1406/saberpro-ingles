@@ -1,0 +1,153 @@
+<%- include('../partials/header') %>
+
+<style>
+    /* Estilos dinámicos para evitar advertencias de sintaxis CSS/EJS */
+    .activity-node-card.completed {
+        background: rgba(6, 182, 212, 0.03);
+        border: 1px solid rgba(6, 182, 212, 0.1);
+    }
+    .activity-node-card.available {
+        background: rgba(124, 58, 237, 0.03);
+        border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    .activity-node-card.locked {
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .node-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        font-weight: bold;
+    }
+    .node-icon.completed {
+        background: var(--accent-cyan);
+    }
+    .node-icon.available {
+        background: var(--accent-purple);
+    }
+    .node-icon.locked {
+        background: #1f2937;
+    }
+
+    .sub-module-badge {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: bold;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+    .sub-module-badge.completed {
+        background: rgba(6, 182, 212, 0.1);
+        color: var(--accent-cyan);
+    }
+    .sub-module-badge.pending {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+    }
+
+    .activity-title {
+        margin: 0.25rem 0;
+        font-size: 1.1rem;
+    }
+    .activity-title.available {
+        color: white;
+    }
+    .activity-title.locked {
+        color: var(--text-muted);
+    }
+</style>
+
+<div class="roadmap-container" style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+    <!-- Week Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem; background:rgba(255,255,255,0.02); padding:1.5rem; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+        <div>
+            <a href="/student" style="color:var(--accent-cyan); text-decoration:none; font-size:0.9rem; font-weight:600;">← Volver a la Ruta</a>
+            <h1 style="margin: 0.5rem 0 0 0; font-size: 2rem;"><%= week.Title %></h1>
+            <p style="color:var(--text-muted); margin: 0.25rem 0 0 0;">Semana <%= week.WeekNumber %> — 20 Sub-módulos</p>
+        </div>
+        
+
+    </div>
+
+    <!-- Progress bar -->
+    <div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.05); margin-bottom:2.5rem; display:flex; align-items:center; gap:1.5rem;">
+        <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:0.5rem;">
+                <span style="font-weight:600;">Progreso de la Semana</span>
+                <span style="color:var(--accent-cyan); font-weight:bold;"><%= completedCount %> / 20 Completados</span>
+            </div>
+            <div style="height:10px; background:rgba(255,255,255,0.1); border-radius:5px; overflow:hidden;">
+                <div <%- `style="height: 100%; width: ${(completedCount / 20) * 100}%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan)); transition: width 0.5s ease;"` %>></div>
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <span style="font-size:0.8rem; color:var(--text-muted); display:block;">Monedas Ganadas</span>
+            <span style="font-size:1.5rem; font-weight:bold; color:var(--accent-gold);">🪙 <%= totalCoins %></span>
+        </div>
+    </div>
+
+    <!-- Activities Path / Chain -->
+    <div style="display:flex; flex-direction:column; gap:1.5rem; position:relative;">
+        <!-- Vertical connector line behind nodes -->
+        <div style="position:absolute; top:20px; bottom:20px; left:30px; width:4px; background:rgba(255,255,255,0.05); z-index:1;"></div>
+
+        <% activities.forEach((act, idx) => { %>
+            <div class="activity-node-card <%= act.isCompleted ? 'completed' : (act.isAvailable ? 'available' : 'locked') %>" style="display: flex; align-items: center; gap: 1.5rem; position: relative; z-index: 2; padding: 1rem; border-radius: 12px; transition: transform 0.2s;">
+                <!-- Node Icon -->
+                <div class="node-icon <%= act.isCompleted ? 'completed' : (act.isAvailable ? 'available' : 'locked') %>">
+                    <% if (act.isCompleted) { %>
+                        ✓
+                    <% } else if (act.SortOrder === 20) { %>
+                        💀
+                    <% } else if (act.GameMechanic === 'vocabulary_match') { %>
+                        🏭
+                    <% } else if (act.GameMechanic === 'drag_drop') { %>
+                        📖
+                    <% } else if (act.GameMechanic === 'pragmatics_map') { %>
+                        🗺️
+                    <% } else if (act.GameMechanic === 'grammar_circuit') { %>
+                        ⚡
+                    <% } else { %>
+                        🧩
+                    <% } %>
+                </div>
+
+                <!-- Node Description -->
+                <div style="flex:1;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span class="sub-module-badge <%= act.isCompleted ? 'completed' : 'pending' %>">
+                            Sub-módulo <%= act.SortOrder %>
+                        </span>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">
+                            <%= act.GameMechanic === 'vocabulary_match' ? 'Vocabulario' : (act.GameMechanic === 'drag_drop' ? 'Lectura' : (act.GameMechanic === 'pragmatics_map' ? 'Pragmática' : (act.GameMechanic === 'grammar_circuit' ? 'Gramática' : 'Evaluación'))) %>
+                        </span>
+                    </div>
+                    <h3 class="activity-title <%= act.isAvailable ? 'available' : 'locked' %>"><%= act.Title %></h3>
+                    <p style="margin:0; font-size:0.85rem; color:var(--text-muted);"><%= act.Description %></p>
+                </div>
+
+                <!-- Actions / Cheats -->
+                <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:flex-end;">
+                    <% if (act.isCompleted) { %>
+                        <a href="<%= act.playUrl %>" class="btn btn-secondary" style="padding:0.4rem 1rem; font-size:0.85rem; border-color:var(--accent-cyan); color:var(--accent-cyan);">Repetir</a>
+                    <% } else if (act.isAvailable) { %>
+                        <a href="<%= act.playUrl %>" class="btn btn-primary" style="padding:0.4rem 1.2rem; font-size:0.85rem; background:var(--accent-purple); color:white; text-decoration:none; border-radius:6px; font-weight:600;">Jugar ▶</a>
+                    <% } else { %>
+                        <span style="font-size:1.2rem; color:var(--text-muted);">🔒</span>
+                    <% } %>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+</div>
+
+
+
+<%- include('../partials/footer') %>

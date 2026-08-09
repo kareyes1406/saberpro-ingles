@@ -1,0 +1,161 @@
+<%- include('../partials/admin-header') %>
+
+<!-- Page Header -->
+<div id="pdf-content" style="padding: 10px;">
+<div class="page-header">
+  <h1>📊 Dashboard</h1>
+  <p style="color:var(--text-secondary)">Bienvenido, <%= user.FirstName %></p>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h3>Estudiantes Activos</h3>
+      <div class="kpi-value" id="totalUsers"><%= kpis.totalUsers %></div>
+    </div>
+    <div class="kpi-icon">👥</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h3>Tasa de Finalización</h3>
+      <div class="kpi-value" id="completionRate"><%= kpis.completionRate %>%</div>
+    </div>
+    <div class="kpi-icon" style="background:rgba(16,185,129,0.1);color:var(--color-success);">✅</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h3>Tasa de Abandono</h3>
+      <div class="kpi-value" style="color:var(--color-error);" id="abandonRate"><%= kpis.abandonRate %>%</div>
+    </div>
+    <div class="kpi-icon" style="background:rgba(239,68,68,0.1);color:var(--color-error);">⚠️</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h3>Tiempo Promedio / Evaluación</h3>
+      <div class="kpi-value" id="avgTime"><%= kpis.avgTimeMinutes %> min</div>
+    </div>
+    <div class="kpi-icon" style="background:rgba(245,158,11,0.1);color:var(--color-gold);">⏱️</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid" id="charts-section">
+  <div class="chart-card">
+    <h3>Tasa de Finalización por Semana</h3>
+    <div class="chart-container"><canvas id="completionChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>Tiempo Promedio por Evaluación (seg)</h3>
+    <div class="chart-container"><canvas id="timeChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>Efectividad por Módulo</h3>
+    <div class="chart-container"><canvas id="effectivenessChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>Actividad Últimos 7 Días</h3>
+    <div class="chart-container"><canvas id="activityChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Users Table -->
+<div class="table-container" id="users-section">
+  <div class="table-header-actions">
+    <h2>Gestión de Estudiantes</h2>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <input type="text" id="searchUsers" placeholder="🔍 Buscar..." class="form-control" style="width:200px;">
+      <button onclick="openCreateModal()" class="btn-primary">+ Agregar Estudiante</button>
+      <button onclick="exportToCSV()" class="btn-secondary" style="background:#06b6d4; color:white; border:none;">📥 CSV</button>
+      <button onclick="exportDashboardPDF()" class="btn-secondary" style="background:#ef4444; color:white; border:none;">📄 PDF Informe</button>
+    </div>
+  </div>
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>ID</th><th>Nombre</th><th>Email</th><th>XP</th>
+        <th>Semana</th><th>Racha</th><th>Estado</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(user => { %>
+        <tr data-user-id="<%= user.UserID %>">
+          <td><%= user.UserID %></td>
+          <td><%= user.FirstName %> <%= user.LastName %></td>
+          <td><%= user.Email %></td>
+          <td><%= user.TotalXP %> XP</td>
+          <td>Sem. <%= user.CurrentWeek || 1 %></td>
+          <td>🔥 <%= user.CurrentStreak %></td>
+          <td>
+            <span class="badge-pill <%= user.IsActive ? 'active' : 'inactive' %>">
+              <%= user.IsActive ? 'Activo' : 'Inactivo' %>
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-icon edit" 
+                      data-user-id="<%= user.UserID %>"
+                      data-first-name="<%= user.FirstName %>"
+                      data-last-name="<%= user.LastName %>"
+                      data-email="<%= user.Email %>"
+                      data-is-active="<%= user.IsActive ? '1' : '0' %>"
+                      onclick="openEditModal({
+                        UserID: this.dataset.userId,
+                        FirstName: this.dataset.firstName,
+                        LastName: this.dataset.lastName,
+                        Email: this.dataset.email,
+                        IsActive: this.dataset.isActive === '1'
+                      })">✏️</button>
+              <button class="btn-icon delete" onclick="deleteUser('<%= user.UserID %>')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+</div> <!-- End pdf-content -->
+
+<!-- CRUD Modal -->
+<div class="modal-overlay" id="userModal" data-html2canvas-ignore="true">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Agregar Estudiante</h3>
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="userForm">
+        <input type="hidden" id="formUserId">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" id="formFirstName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input type="text" id="formLastName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="formEmail" class="form-control" required>
+        </div>
+        <div class="form-group" id="passwordGroup">
+          <label class="form-label">Contraseña</label>
+          <input type="password" id="formPassword" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select id="formActive" class="form-control">
+            <option value="1">Activo</option>
+            <option value="0">Inactivo</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancelar</button>
+      <button type="button" onclick="submitUserForm()" class="btn btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

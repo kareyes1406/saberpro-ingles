@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title>Iniciar Sesión | SaberPro Inglés</title>
+    
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --purple: #7c3aed;
+            --cyan: #06b6d4;
+            --text-light: #f3f4f6;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow: hidden;
+        }
+
+        .login-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Left Panel - Animated Description */
+        .promo-panel {
+            flex: 1;
+            background: linear-gradient(135deg, rgba(10,14,26,0.9) 0%, rgba(124,58,237,0.4) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .promo-content {
+            z-index: 2;
+            max-width: 600px;
+        }
+
+        .promo-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--cyan), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .promo-subtitle {
+            font-size: 1.25rem;
+            color: #d1d5db;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            animation: slideIn 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        
+        .feature-item:nth-child(1) { animation-delay: 0.2s; }
+        .feature-item:nth-child(2) { animation-delay: 0.4s; }
+        .feature-item:nth-child(3) { animation-delay: 0.6s; }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.75rem;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Animated Background Shapes */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            z-index: 1;
+            animation: float 10s infinite alternate ease-in-out;
+        }
+        .shape-1 {
+            width: 300px; height: 300px;
+            background: rgba(124, 58, 237, 0.3);
+            top: -100px; left: -100px;
+        }
+        .shape-2 {
+            width: 400px; height: 400px;
+            background: rgba(6, 182, 212, 0.2);
+            bottom: -150px; right: -100px;
+            animation-delay: -5s;
+        }
+
+        .mascot-slideshow {
+            position: absolute;
+            bottom: -50px;
+            right: 0px;
+            width: 800px;
+            height: 800px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .login-mascot {
+            position: absolute;
+            bottom: 0;
+            right: 20px;
+            width: 800px;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
+            opacity: 0;
+            animation: mascotCycle 25s infinite;
+        }
+        
+        .skin-1 { animation-delay: 0s; }
+        .skin-2 { animation-delay: 5s; }
+        .skin-3 { animation-delay: 10s; }
+        .skin-4 { animation-delay: 15s; }
+        .skin-5 { animation-delay: 20s; }
+        
+        @keyframes mascotCycle {
+            0% { opacity: 0; transform: translateY(20px); }
+            4% { opacity: 0.95; transform: translateY(0); }
+            16% { opacity: 0.95; transform: translateY(0); }
+            20% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* Right Panel - Form */
+        .form-panel {
+            width: 450px;
+            background: #111827;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 3rem;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .form-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-header h2 {
+            font-size: 2rem;
+            margin: 0 0 0.5rem 0;
+            color: #fff;
+        }
+
+        .role-selector {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 0.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .role-tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #9ca3af;
+        }
+
+        .role-tab.active {
+            background: var(--purple);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #d1d5db;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--purple);
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+        }
+        
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-right: 3rem !important;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            user-select: none;
+            outline: none;
+            transition: transform 0.1s ease;
+        }
+        
+        .toggle-password:hover {
+            opacity: 0.85;
+        }
+        
+        .toggle-password:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background: var(--purple);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        .btn-submit:hover { background: #6d28d9; }
+        .btn-submit:active { transform: scale(0.98); }
+
+        .auth-links {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        .auth-links a {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .auth-links a:hover { text-decoration: underline; }
+
+        .flash-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+        }
+        .flash-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+            color: #6ee7b7;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+        }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(30px, 50px); }
+        }
+
+        @media (max-width: 900px) {
+            .promo-panel { display: none; }
+            .form-panel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    
+    <!-- Left Promo Panel -->
+    <div class="promo-panel">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        
+        <!-- Husky Mascot Slideshow -->
+        <div class="mascot-slideshow">
+            <img src="/img/mascota/skin-lectura.png" alt="Mascota Lectura" class="login-mascot skin-1" />
+            <img src="/img/mascota/skin-pragmatica.png" alt="Mascota Pragmática" class="login-mascot skin-2" />
+            <img src="/img/mascota/skin-gramatica.png" alt="Mascota Gramática" class="login-mascot skin-3" />
+            <img src="/img/mascota/skin-vocabulario.png" alt="Mascota Vocabulario" class="login-mascot skin-4" />
+            <img src="/img/mascota/skin-jefe.png" alt="Mascota Jefe" class="login-mascot skin-5" />
+        </div>
+        
+        <div class="promo-content">
+            <h1 class="promo-title">Domina el Inglés Saber Pro</h1>
+            <p class="promo-subtitle">Una experiencia gamificada diseñada para que asegures el mejor puntaje en tu prueba de Estado.</p>
+            
+            <ul class="feature-list">
+                <li class="feature-item">
+                    <span class="feature-icon">🎮</span>
+                    Juegos interactivos (Tycoon, Drag & Drop, Bosses)
+                </li>
+                <li class="feature-item">
+                    <span class="feature-icon">📈</span>
+                    Ruta de aprendizaje estructurada de 12 semanas
+                </li>
+                <li class="feature-item">
+                    <span class="feature-icon">🏆</span>
+                    Gana XP, medallas y compite en el ranking
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="form-panel">
+        <div class="form-header">
+            <h2>Bienvenido de Vuelta</h2>
+            <p style="color: #9ca3af; margin: 0; font-size: 0.875rem;">Ingresa tus credenciales para continuar</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+            <% error.forEach(msg => { %>
+                <div class="flash-error">⚠️ <%= msg %></div>
+            <% }); %>
+        <% } %>
+        <% if (typeof success_msg !== 'undefined' && success_msg && success_msg.length > 0) { %>
+            <% success_msg.forEach(msg => { %>
+                <div class="flash-success">✅ <%= msg %></div>
+            <% }); %>
+        <% } %>
+
+        <form action="/auth/login" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="email">Correo Electrónico</label>
+                <input type="email" id="email" name="email" class="form-control" required placeholder="tu@correo.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Contraseña</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" class="form-control" required placeholder="Tu contraseña">
+                    <button type="button" class="toggle-password" id="btnTogglePassword" title="Mostrar / Ocultar contraseña" aria-label="Mostrar / Ocultar contraseña">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">Ingresar a la Plataforma</button>
+        </form>
+
+        <div class="auth-links">
+            ¿No tienes cuenta? <a href="/auth/register">Regístrate aquí</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtns = document.querySelectorAll('.toggle-password');
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const wrapper = btn.closest('.password-wrapper');
+                const pwdInput = wrapper ? wrapper.querySelector('input') : document.getElementById('password');
+                if (!pwdInput) return;
+                
+                const isCurrentlyPassword = (pwdInput.type === 'password' || pwdInput.getAttribute('type') === 'password');
+                
+                if (isCurrentlyPassword) {
+                    pwdInput.type = 'text';
+                    pwdInput.setAttribute('type', 'text');
+                    pwdInput.style.webkitTextSecurity = 'none';
+                    pwdInput.style.fontFamily = "'Inter', sans-serif";
+                    btn.innerHTML = `
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
+                    `;
+                } else {
+                    pwdInput.type = 'password';
+                    pwdInput.setAttribute('type', 'password');
+                    pwdInput.style.webkitTextSecurity = '';
+                    btn.innerHTML = `
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    `;
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

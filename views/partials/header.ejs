@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <meta name="description" content="SaberPro Inglés - Plataforma gamificada de preparación para pruebas Saber Pro">
+    <title><%= typeof title !== 'undefined' ? title : 'SaberPro' %> | SaberPro Inglés</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+    <% if (typeof cssFile !== 'undefined' && cssFile) { %>
+        <link rel="stylesheet" href="/css/<%= cssFile %>">
+    <% } %>
+</head>
+<body>
+    <!-- Glassmorphism Navbar -->
+    <nav class="navbar">
+        <a href="/student" class="navbar-brand">
+            🎓 <span>SaberPro</span> Inglés
+        </a>
+        <% if (typeof user !== 'undefined' && user) { %>
+        <div class="nav-stats">
+            <div class="xp-bar-container">
+                <div class="xp-bar" id="navXPBar" <%- `style="width: ${typeof studentStats !== 'undefined' ? (studentStats.TotalXP % 100) : 0}%;"` %>></div>
+                <span class="xp-text">Nv. <%= typeof studentStats !== 'undefined' ? studentStats.Level : 1 %> — <%= typeof studentStats !== 'undefined' ? studentStats.TotalXP : 0 %> XP</span>
+            </div>
+            <div class="streak-counter">
+                🔥 <span id="navStreak"><%= typeof studentStats !== 'undefined' ? studentStats.CurrentStreak : 0 %></span>
+            </div>
+            <div class="coin-counter">
+                🪙 <span id="navCoins"><%= typeof studentStats !== 'undefined' ? studentStats.TotalCoins : 0 %></span>
+            </div>
+        </div>
+        <div class="nav-user">
+            <a href="/student/profile" class="user-name" style="color:var(--accent-cyan); text-decoration:none; margin-right:0.5rem; font-weight:600;"><%= user.FirstName %> 👤</a>
+            <form action="/auth/logout" method="POST" style="display:inline">
+                <button type="submit" class="btn btn-secondary" style="padding:0.4rem 0.8rem;font-size:0.8rem;">Salir</button>
+            </form>
+        </div>
+        <% } %>
+    </nav>
+    
+    <!-- Flash Messages -->
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+        <% error.forEach(msg => { %>
+            <div class="flash-message flash-error">⚠️ <%= msg %></div>
+        <% }); %>
+    <% } %>
+    <% if (typeof success_msg !== 'undefined' && success_msg && success_msg.length > 0) { %>
+        <% success_msg.forEach(msg => { %>
+            <div class="flash-message flash-success">✅ <%= msg %></div>
+        <% }); %>
+    <% } %>
+    
+    <main>

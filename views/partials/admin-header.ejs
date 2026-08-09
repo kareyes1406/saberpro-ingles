@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title><%= typeof title !== 'undefined' ? title : 'Admin' %> | SaberPro Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/admin/dashboard" class="navbar-brand">🛡️ <span>SaberPro</span> Admin</a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin/dashboard" class="nav-item active">📊 Dashboard</a>
+                <a href="/admin/dashboard#users-section" class="nav-item">👥 Usuarios</a>
+                <a href="/admin/dashboard#charts-section" class="nav-item">📈 KPIs</a>
+                <a href="/admin/profile" class="nav-item">👤 Mi Perfil</a>
+            </nav>
+            <div style="padding:var(--space-lg);margin-top:auto;">
+                <form action="/auth/logout" method="POST">
+                    <button type="submit" class="btn btn-danger" style="width:100%">🚪 Cerrar Sesión</button>
+                </form>
+            </div>
+        </aside>
+        <div class="admin-content">

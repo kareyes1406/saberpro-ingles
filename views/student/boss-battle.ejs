@@ -1,0 +1,75 @@
+<%- include('../partials/header') %>
+
+<div class="battle-container">
+  <div class="battle-arena">
+    <div class="battle-hud">
+      <div class="combatant player">
+        <div class="combatant-info">
+          <span class="combatant-name"><%= user ? user.FirstName : 'Estudiante' %></span>
+        </div>
+        <div class="hp-bar-container">
+          <div class="hp-bar player-hp" id="playerHP" style="width: 100%;"></div>
+          <span class="hp-text"><span id="playerHPText">100</span> / 100</span>
+        </div>
+      </div>
+      
+      <div class="combatant boss">
+        <div class="combatant-info" style="text-align: right;">
+          <span class="combatant-name">Jefe Corte <%= cutNumber %></span>
+        </div>
+        <div class="hp-bar-container">
+          <div class="hp-bar boss-hp" id="bossHP" style="width: 100%;"></div>
+          <span class="hp-text"><span id="bossHPText">100</span> / 100</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="avatars-area">
+      <div class="avatar player-avatar">🥋</div>
+      <div class="avatar boss-avatar">🐉</div>
+    </div>
+  </div>
+  
+  <div class="question-panel">
+    <div class="question-header">
+      <span>Pregunta <span id="qCurrent">1</span> de <span id="qTotal"><%= questions.length %></span> (Mínimo 75% para aprobar)</span>
+      <span class="timer-num">⏱️ <span id="timerNum">30</span>s</span>
+    </div>
+    <div class="timer-bar-container">
+      <div id="timerBar" class="timer-bar"></div>
+    </div>
+    
+    <h3 class="question-text" id="questionText">Cargando combate...</h3>
+    <div class="answers-grid" id="answersGrid">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+</div>
+
+<script id="questionsData" type="application/json"><%- JSON.stringify(questions) %></script>
+<div id="battleConfig" data-activity-id="<%= activity.ActivityID %>" data-cut-number="<%= cutNumber %>" style="display:none"></div>
+
+<!-- Modals -->
+<div id="victoryModal" class="battle-modal" style="display:none;">
+  <div class="modal-card">
+    <h2 class="victory-title">🏆 ¡VICTORIA!</h2>
+    <p style="margin: 0.5rem 0; color: #e2e8f0;">¡Excelente trabajo! Has alcanzado el 75% o más y derrotado al Jefe del Corte.</p>
+    <div class="rewards-box">
+      <div style="font-size: 1.1rem; color: #f59e0b; margin-bottom: 0.5rem;">XP Ganada: +<span id="victoryXP">0</span> XP</div>
+      <div style="font-size: 1rem; color: #38bdf8;">Puntaje Final: <span id="victoryScore">0</span></div>
+      <div style="font-size: 0.85rem; color: #4ade80; margin-top: 0.25rem;">Requisito cumplido: ≥ 75% de acierto</div>
+    </div>
+    <a href="/student" class="btn btn-primary" style="margin-top: 1.5rem; padding: 0.75rem 2rem; font-weight: bold; background: var(--accent-purple); display: inline-block;">Volver al Mapa</a>
+  </div>
+</div>
+
+<div id="defeatModal" class="battle-modal" style="display:none;">
+  <div class="modal-card">
+    <h2 class="defeat-title">💀 ¡DERROTA!</h2>
+    <p id="defeatReasonText" style="margin: 0.75rem 0; color: #fca5a5; font-size: 1.05rem;">No lograste responder al menos el 75% de las preguntas correctamente.</p>
+    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.5rem;">Serás redirigido al módulo principal automáticamente...</p>
+    <a href="/student" class="btn btn-primary" style="padding: 0.75rem 2rem; font-weight: bold; background: #ef4444; color: white; text-decoration: none; border-radius: 8px; display: inline-block;">Volver al Mapa</a>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

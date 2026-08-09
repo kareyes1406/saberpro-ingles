@@ -1,0 +1,53 @@
+<%- include('../partials/admin-header') %>
+
+<div style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+    <!-- Profile Header Cover -->
+    <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 2.5rem; display: flex; gap: 2rem; align-items: center; margin-bottom: 2.5rem; position: relative; overflow: hidden;">
+        <div style="font-size: 5rem; background: rgba(255,255,255,0.05); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ef4444;">
+            🛡️
+        </div>
+        <div style="z-index: 2;">
+            <span style="font-size:0.8rem; font-weight:bold; background:#ef4444; color:white; padding:0.25rem 0.75rem; border-radius:12px; text-transform:uppercase;">Administrador</span>
+            <h1 style="margin: 0.5rem 0 0.25rem 0; font-size: 2.5rem;"><%= admin.FirstName %> <%= admin.LastName %></h1>
+            <p style="margin:0; color:var(--text-muted); font-size:1.1rem;"><%= admin.Email %></p>
+            <p style="margin:0.5rem 0 0 0; font-size:0.9rem; color:var(--accent-cyan); font-weight:600;">Miembro desde: <%= new Date(admin.CreatedAt).toLocaleDateString() %></p>
+        </div>
+        <div style="position:absolute; right:-50px; bottom:-50px; font-size:15rem; opacity:0.02; pointer-events:none; font-weight:900; color:white;">ADM</div>
+    </div>
+
+    <!-- Admin Account Settings Info -->
+    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:2rem;">
+        <h2 style="margin-top:0; margin-bottom:1.5rem; font-size:1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+            ⚙️ Detalles de la Cuenta Administrativa
+        </h2>
+        
+        <div style="display:flex; flex-direction:column; gap:1.25rem; font-size:1rem;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:0.75rem;">
+                <span style="color:var(--text-muted);">Identificador de Administrador (ID)</span>
+                <span style="font-weight:bold;"><%= admin.UserID %></span>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:0.75rem;">
+                <span style="color:var(--text-muted);">Nombre</span>
+                <span style="font-weight:bold;"><%= admin.FirstName %></span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:0.75rem;">
+                <span style="color:var(--text-muted);">Apellido</span>
+                <span style="font-weight:bold;"><%= admin.LastName %></span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:0.75rem;">
+                <span style="color:var(--text-muted);">Correo Electrónico de Contacto</span>
+                <span style="font-weight:bold;"><%= admin.Email %></span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:0.75rem;">
+                <span style="color:var(--text-muted);">Estado de Cuenta</span>
+                <span style="font-weight:bold; color:#10b981;"><%= admin.IsActive ? 'Activo' : 'Inactivo' %></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/admin-footer') %>
