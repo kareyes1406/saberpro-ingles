@@ -88,6 +88,7 @@ exports.showRegister = (req, res) => {
 };
 
 exports.processRegister = async (req, res) => {
+    console.log("=== DATOS DEL FORMULARIO RECIBIDOS ===", req.body);
     try {
         const { firstName, lastName, email, password, confirmPassword } = req.body;
         
@@ -142,6 +143,7 @@ exports.processRegister = async (req, res) => {
     } catch (error) {
         console.error('Register Error:', error);
         req.flash('error', 'Error al registrar. Intenta de nuevo.');
+        console.error("==== ERROR SQL AL REGISTRAR ====", error);
         res.redirect('/auth/register');
     }
 };
