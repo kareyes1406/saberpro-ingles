@@ -369,6 +369,7 @@
                 </div>
             </div>
 
+            <div id="clientError" class="flash-error" style="display: none; margin-top: 1rem;"></div>
             <button type="submit" class="btn-submit">Registrarme</button>
         </form>
 
@@ -381,6 +382,40 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const form = document.querySelector('form');
+        const errorDiv = document.getElementById('clientError');
+
+        form.addEventListener('submit', (e) => {
+            const pwd = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (pwd !== confirm) {
+                e.preventDefault();
+                errorDiv.textContent = '⚠️ Las contraseñas no coinciden.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (pwd.length < 8) {
+                e.preventDefault();
+                errorDiv.textContent = '⚠️ La contraseña debe tener al menos 8 caracteres.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (!/[A-Z]/.test(pwd)) {
+                e.preventDefault();
+                errorDiv.textContent = '⚠️ La contraseña debe contener al menos una letra mayúscula.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+                e.preventDefault();
+                errorDiv.textContent = '⚠️ La contraseña debe contener al menos un carácter especial.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            errorDiv.style.display = 'none';
+        });
+
         const toggleBtns = document.querySelectorAll('.toggle-password');
         toggleBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {

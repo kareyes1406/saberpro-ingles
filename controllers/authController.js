@@ -103,8 +103,18 @@ exports.processRegister = async (req, res) => {
             return res.redirect('/auth/register');
         }
         
-        if (password.length < 6) {
-            req.flash('error', 'La contraseña debe tener al menos 6 caracteres');
+        if (password.length < 8) {
+            req.flash('error', 'La contraseña debe tener al menos 8 caracteres');
+            return res.redirect('/auth/register');
+        }
+
+        if (!/[A-Z]/.test(password)) {
+            req.flash('error', 'La contraseña debe contener al menos una letra mayúscula');
+            return res.redirect('/auth/register');
+        }
+
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            req.flash('error', 'La contraseña debe contener al menos un carácter especial');
             return res.redirect('/auth/register');
         }
         
