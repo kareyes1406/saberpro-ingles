@@ -113,16 +113,30 @@ class Gamification {
         const stats = await this.getStudentStats(userId);
         if (!stats) return;
 
-        if (stats.CurrentStreak >= 3) {
-            const query = `
-                INSERT INTO UserBadges (UserID, BadgeID)
-                SELECT @UserID, BadgeID FROM Badges WHERE BadgeName = 'Racha 3 Días'
-                AND NOT EXISTS (
-                    SELECT 1 FROM UserBadges WHERE UserID = @UserID AND BadgeID = Badges.BadgeID
-                )
-            `;
-            await executeQuery(query, [{ name: 'UserID', type: sql.Int, value: userId }]);
-        }
+        // Query para otorgar medallas basadas en condiciones, si el usuario aún no las tiene
+        const query = `
+            INSERT INTO UserBadges (UserID, BadgeID, EarnedAt)
+            SELECT @UserID, BadgeID, GETDATE() 
+            FROM Badges 
+            WHERE (
+                   (BadgeName = 'Racha 3 Días' AND @CurrentStreak >= 3)
+                OR (BadgeName = 'Racha 7 Días' AND @CurrentStreak >= 7)
+                OR (BadgeName = 'Racha 14 Días' AND @CurrentStreak >= 14)
+                OR (BadgeName = 'Racha 30 Días' AND @CurrentStreak >= 30)
+                OR (BadgeType = 'milestone' AND XPRequired <= @TotalXP AND XPRequired > 0)
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM UserBadges WHERE UserID = @UserID AND BadgeID = Badges.BadgeID
+            )
+        `;
+        
+        const params = [
+            { name: 'UserID', type: sql.Int, value: userId },
+            { name: 'CurrentStreak', type: sql.Int, value: stats.CurrentStreak || 0 },
+            { name: 'TotalXP', type: sql.Int, value: stats.TotalXP || 0 }
+        ];
+        
+        await executeQuery(query, params);
     }
 
     /**

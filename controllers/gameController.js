@@ -1,7 +1,7 @@
 /**
  * controllers/gameController.js
  * Controlador de Mecánicas de Juego
- * Vocabulario (Tycoon), Lectura (D&D), Boss Battle
+ * Adaptado para 245 preguntas ICFES con aleatorización
  */
 const Module = require('../models/Module');
 const Progress = require('../models/Progress');
@@ -37,6 +37,31 @@ async function isAlreadyCompleted(userId, activityId) {
     }
 }
 
+/**
+ * Determina el tipo de pregunta a usar según la semana y el tipo de actividad
+ */
+function getQuestionTypeForActivity(weekNumber, activityType) {
+    // Semanas 1-3: Nivel A1-A2 (Parts 1, 2, 3)
+    // Semanas 5-7: Nivel A2-B1 (Parts 4, 5)
+    // Semanas 9-11: Nivel B1-B2 (Parts 6, 7)
+    
+    if (activityType === 'Vocabulary') {
+        return 'part2_matching';
+    } else if (activityType === 'Pragmatics') {
+        if (weekNumber <= 3) return 'part1_notice';
+        if (weekNumber <= 7) return 'part3_dialogue';
+        return 'part1_notice'; // fallback
+    } else if (activityType === 'Reading') {
+        if (weekNumber <= 7) return 'part5_reading';
+        return 'part6_critical';
+    } else if (activityType === 'Grammar') {
+        if (weekNumber <= 7) return 'part4_cloze';
+        return 'part7_cloze_advanced';
+    }
+    return 'part1_notice';
+}
+
+// ── VOCABULARIO (Part 2: Matching) ──────────────────────────────────
 exports.showVocabulary = async (req, res) => {
     try {
         const activityId = parseInt(req.params.activityId);
@@ -45,17 +70,19 @@ exports.showVocabulary = async (req, res) => {
         const activity = await Module.getActivity(activityId);
         if (!activity) return res.redirect('/student');
         
-        const questions = await Module.getQuestions(activityId);
+        // Obtener preguntas del pool de vocabulario aleatoriamente
+        const questions = await Module.getRandomQuestionsByType('part2_matching', 5, userId, activityId);
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
         
-        // Prepare vocabulary pairs: QuestionText = Spanish, correct option = English
+        // Prepare vocabulary pairs: QuestionText = Definition, correct option = Word
         const pairs = questions.map(q => ({
             QuestionID: q.QuestionID,
             QuestionText: q.QuestionText,
+            Explanation: q.Explanation,
             CorrectOption: q.Options.find(o => o.IsCorrect) || q.Options[0]
         }));
         
-        // Shuffle the English options for display
+        // Shuffle the options for display
         const shuffledOptions = shuffleArray(pairs.map(p => ({
             OptionID: p.CorrectOption ? p.CorrectOption.OptionID : 0,
             OptionText: p.CorrectOption ? p.CorrectOption.OptionText : '',
@@ -86,18 +113,14 @@ exports.submitVocabulary = async (req, res) => {
         const activity = await Module.getActivity(parseInt(activityId));
         if (!activity) return res.status(400).json({ error: 'Actividad no encontrada' });
         
-        // Find total questions for this activity to calculate score
-        const questions = await Module.getQuestions(parseInt(activityId));
-        const totalQ = questions.length;
         const matchedPairs = parseInt(req.body.matchedPairs || 0);
+        const totalQ = parseInt(req.body.totalQuestions || 5);
         
         const score = totalQ > 0 ? Math.round((matchedPairs / totalQ) * 100) : 100;
         const passed = score >= 60;
         
-        // Check if user already completed this submodule successfully
         const alreadyCompleted = await isAlreadyCompleted(userId, parseInt(activityId));
         
-        // Record progress (always save attempts)
         await Progress.recordCompletion({
             userId, activityId: parseInt(activityId),
             isCompleted: passed, score,
@@ -107,7 +130,6 @@ exports.submitVocabulary = async (req, res) => {
         let xpEarned = 0;
         let coinsEarned = 0;
         
-        // ONLY award XP and coins on the FIRST successful completion
         if (passed && !alreadyCompleted) {
             xpEarned = Math.round((score / 100) * activity.XPReward);
             coinsEarned = Math.round((score / 100) * activity.CoinReward);
@@ -125,6 +147,7 @@ exports.submitVocabulary = async (req, res) => {
     }
 };
 
+// ── LECTURA (Parts 5 y 6: Comprensión) ──────────────────────────────
 exports.showReading = async (req, res) => {
     try {
         const activityId = parseInt(req.params.activityId);
@@ -133,65 +156,102 @@ exports.showReading = async (req, res) => {
         const activity = await Module.getActivity(activityId);
         if (!activity) return res.redirect('/student');
         
-        const questions = await Module.getQuestions(activityId);
+        // Determinar la semana para saber qué tipo de lectura usar
+        const weekResult = await executeQuery(
+            'SELECT WeekNumber FROM ModuleWeeks MW INNER JOIN Activities A ON MW.WeekID = A.WeekID WHERE A.ActivityID = @ActivityID',
+            [{ name: 'ActivityID', type: sql.Int, value: activityId }]
+        );
+        const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
+        
+        // Seleccionar tipo de lectura según la semana
+        const questionType = weekNumber <= 7 ? 'part5_reading' : 'part6_critical';
+        
+        // Obtener todas las preguntas de lectura de ese tipo
+        const allQuestions = await Module.getReadingQuestions(questionType, userId);
+        
+        // Agrupar por ReadingPassage para obtener un texto completo con sus preguntas
+        const passageGroups = {};
+        allQuestions.forEach(q => {
+            const passageKey = q.ReadingPassage || q.MediaUrl || 'default';
+            if (!passageGroups[passageKey]) {
+                passageGroups[passageKey] = {
+                    passage: q.ReadingPassage,
+                    title: q.MediaUrl, // MediaUrl stores the reading title
+                    questions: []
+                };
+            }
+            passageGroups[passageKey].questions.push(q);
+        });
+        
+        // Seleccionar UN pasaje aleatorio
+        const passageKeys = Object.keys(passageGroups);
+        const randomPassageKey = passageKeys[Math.floor(Math.random() * passageKeys.length)];
+        const selectedGroup = passageGroups[randomPassageKey] || { passage: '', title: '', questions: [] };
+        
+        // Tomar un subconjunto aleatorio de preguntas de ese pasaje (5-7)
+        const selectedQuestions = shuffleArray(selectedGroup.questions).slice(0, 7);
+        
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
         
-        const textBlocks = [];
-        if (questions.length > 0) {
-            const q = questions[0];
-            q.Options.forEach(opt => {
-                textBlocks.push({
-                    OptionID: opt.OptionID,
-                    OptionText: opt.OptionText,
-                    SortOrder: opt.SortOrder
-                });
-            });
-        }
+        // Guardar respuestas correctas en sesión para verificación segura
+        const correctAnswers = {};
+        const clientQuestions = selectedQuestions.map(q => {
+            const correctOpt = q.Options.find(o => o.IsCorrect);
+            if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+            return {
+                QuestionID: q.QuestionID,
+                QuestionText: q.QuestionText,
+                QuestionType: q.QuestionType,
+                Explanation: q.Explanation,
+                Options: q.Options.map(o => ({
+                    OptionID: o.OptionID,
+                    OptionText: o.OptionText
+                }))
+            };
+        });
         
-        const shuffledBlocks = shuffleArray(textBlocks);
+        req.session.readingAnswers = correctAnswers;
         
         res.render('student/reading', {
-            title: 'Línea de Ensamblaje Lógico',
+            title: questionType === 'part6_critical' ? 'Lectura Crítica' : 'Comprensión de Lectura',
             cssFile: 'reading.css',
             jsFile: 'reading.js',
             activity,
-            shuffledBlocks,
+            passage: selectedGroup.passage || '',
+            passageTitle: selectedGroup.title || '',
+            questions: clientQuestions,
             studentStats,
             user: req.session.user
         });
     } catch (error) {
         console.error('Reading Error:', error);
-        res.status(500).send('Error cargando lectura lógica');
+        res.status(500).send('Error cargando lectura');
     }
 };
 
 exports.submitReading = async (req, res) => {
     try {
         const userId = req.session.userId;
-        const { activityId, arrangement, timeSpent } = req.body;
+        const { activityId, answers, timeSpent } = req.body;
         
         const activity = await Module.getActivity(parseInt(activityId));
         if (!activity) return res.status(400).json({ error: 'Actividad no encontrada' });
         
-        const questions = await Module.getQuestions(parseInt(activityId));
+        const correctAnswers = req.session.readingAnswers || {};
+        const totalQuestions = Object.keys(correctAnswers).length;
         let correctCount = 0;
-        let totalBlocks = 0;
         
-        if (questions.length > 0 && arrangement) {
-            const correctOrder = questions[0].Options.sort((a, b) => a.SortOrder - b.SortOrder);
-            totalBlocks = correctOrder.length;
-            
-            arrangement.forEach((optId, index) => {
-                if (correctOrder[index] && correctOrder[index].OptionID === parseInt(optId)) {
+        if (answers && typeof answers === 'object') {
+            Object.entries(answers).forEach(([qId, optId]) => {
+                if (correctAnswers[qId] === parseInt(optId)) {
                     correctCount++;
                 }
             });
         }
         
-        const score = totalBlocks > 0 ? Math.round((correctCount / totalBlocks) * 100) : 0;
+        const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
         const passed = score >= 60;
         
-        // Check if user already completed this submodule successfully
         const alreadyCompleted = await isAlreadyCompleted(userId, parseInt(activityId));
         
         await Progress.recordCompletion({
@@ -201,23 +261,30 @@ exports.submitReading = async (req, res) => {
         });
         
         let xpEarned = 0;
+        let coinsEarned = 0;
         
-        // ONLY award XP on first completion
         if (passed && !alreadyCompleted) {
             xpEarned = Math.round((score / 100) * activity.XPReward);
+            coinsEarned = Math.round((score / 100) * activity.CoinReward);
             await Gamification.addXP(userId, xpEarned, parseInt(activityId));
+            await Gamification.addCoins(userId, coinsEarned);
         }
         
         await Gamification.updateStreak(userId);
         await Gamification.checkAndAwardBadges(userId);
         
-        res.json({ success: true, xpEarned, score, correctCount, totalBlocks, passed, alreadyCompleted });
+        if (passed) {
+            delete req.session.readingAnswers;
+        }
+        
+        res.json({ success: true, xpEarned, coinsEarned, score, passed, correctCount, totalQuestions, alreadyCompleted });
     } catch (error) {
         console.error('Submit Reading Error:', error);
-        res.status(500).json({ error: 'Error al verificar ensamblaje' });
+        res.status(500).json({ error: 'Error al verificar lectura' });
     }
 };
 
+// ── PRAGMÁTICA (Parts 1 y 3: Avisos y Diálogos) ────────────────────
 exports.showPragmatics = async (req, res) => {
     try {
         const activityId = parseInt(req.params.activityId);
@@ -226,29 +293,46 @@ exports.showPragmatics = async (req, res) => {
         const activity = await Module.getActivity(activityId);
         if (!activity) return res.redirect('/student');
         
-        const questions = await Module.getQuestions(activityId);
+        // Determinar la semana para saber qué tipo usar
+        const weekResult = await executeQuery(
+            'SELECT WeekNumber FROM ModuleWeeks MW INNER JOIN Activities A ON MW.WeekID = A.WeekID WHERE A.ActivityID = @ActivityID',
+            [{ name: 'ActivityID', type: sql.Int, value: activityId }]
+        );
+        const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
+        
+        // Semanas 1-3: Avisos (Part 1), Semanas 5-7: Diálogos (Part 3)
+        const questionType = weekNumber <= 4 ? 'part1_notice' : 'part3_dialogue';
+        
+        // Obtener 5 preguntas aleatorias del pool
+        const questions = await Module.getRandomQuestionsByType(questionType, 5, userId, activityId);
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
         
-        // Shuffle the options so they aren't pre-matched
-        let allOptions = [];
-        questions.forEach(q => {
-            q.Options.forEach(o => {
-                allOptions.push({
+        // Guardar respuestas correctas en sesión
+        const correctAnswers = {};
+        const clientQuestions = questions.map(q => {
+            const correctOpt = q.Options.find(o => o.IsCorrect);
+            if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+            return {
+                QuestionID: q.QuestionID,
+                QuestionText: q.QuestionText,
+                QuestionType: q.QuestionType,
+                Explanation: q.Explanation,
+                Options: q.Options.map(o => ({
                     OptionID: o.OptionID,
                     OptionText: o.OptionText,
                     IsCorrect: o.IsCorrect
-                });
-            });
+                }))
+            };
         });
-        const shuffledOptions = shuffleArray(allOptions);
+        
+        req.session.pragmaticsAnswers = correctAnswers;
         
         res.render('student/pragmatics', {
-            title: 'El Coordinador Urbano',
+            title: questionType === 'part1_notice' ? 'Avisos y Señales' : 'Conversaciones',
             cssFile: 'pragmatics.css',
             jsFile: 'pragmatics.js',
             activity,
-            questions,
-            shuffledOptions,
+            questions: clientQuestions,
             studentStats,
             user: req.session.user
         });
@@ -261,23 +345,21 @@ exports.showPragmatics = async (req, res) => {
 exports.submitPragmatics = async (req, res) => {
     try {
         const userId = req.session.userId;
-        const { activityId, matches, timeSpent } = req.body;
+        const { activityId, matches, matchedPairs, timeSpent } = req.body;
         
         const activity = await Module.getActivity(parseInt(activityId));
         if (!activity) return res.status(400).json({ error: 'Actividad no encontrada' });
         
-        const questions = await Module.getQuestions(parseInt(activityId));
-        const totalQ = questions.length;
-        let correctCount = 0;
+        const correctAnswers = req.session.pragmaticsAnswers || {};
+        const totalQ = Object.keys(correctAnswers).length || 5;
+        let correctCount = parseInt(matchedPairs || 0);
         
-        if (matches && typeof matches === 'object') {
+        // Si se envían matches individuales, verificar contra sesión
+        if (matches && typeof matches === 'object' && !matchedPairs) {
+            correctCount = 0;
             Object.entries(matches).forEach(([qId, optId]) => {
-                const question = questions.find(q => q.QuestionID === parseInt(qId));
-                if (question) {
-                    const correctOpt = question.Options.find(o => o.IsCorrect);
-                    if (correctOpt && correctOpt.OptionID === parseInt(optId)) {
-                        correctCount++;
-                    }
+                if (correctAnswers[qId] === parseInt(optId)) {
+                    correctCount++;
                 }
             });
         }
@@ -305,6 +387,10 @@ exports.submitPragmatics = async (req, res) => {
         await Gamification.updateStreak(userId);
         await Gamification.checkAndAwardBadges(userId);
         
+        if (passed) {
+            delete req.session.pragmaticsAnswers;
+        }
+        
         res.json({ success: true, xpEarned, coinsEarned, score, passed, correctCount, totalQ, alreadyCompleted });
     } catch (error) {
         console.error('Submit Pragmatics Error:', error);
@@ -312,6 +398,7 @@ exports.submitPragmatics = async (req, res) => {
     }
 };
 
+// ── GRAMÁTICA (Parts 4 y 7: Cloze Tests) ────────────────────────────
 exports.showGrammar = async (req, res) => {
     try {
         const activityId = parseInt(req.params.activityId);
@@ -320,13 +407,33 @@ exports.showGrammar = async (req, res) => {
         const activity = await Module.getActivity(activityId);
         if (!activity) return res.redirect('/student');
         
-        const questions = await Module.getQuestions(activityId);
+        // Determinar la semana
+        const weekResult = await executeQuery(
+            'SELECT WeekNumber FROM ModuleWeeks MW INNER JOIN Activities A ON MW.WeekID = A.WeekID WHERE A.ActivityID = @ActivityID',
+            [{ name: 'ActivityID', type: sql.Int, value: activityId }]
+        );
+        const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
+        
+        // Semanas 1-7: Cloze básico (Part 4), Semanas 8+: Cloze avanzado (Part 7)
+        const questionType = weekNumber <= 7 ? 'part4_cloze' : 'part7_cloze_advanced';
+        
+        // Obtener un texto completo con sus preguntas
+        const textData = await Module.getRandomTextWithQuestions(questionType);
+        if (!textData) return res.status(404).send('No questions found');
+        
+        const questions = textData.questions;
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
         
+        const correctAnswers = {};
         const clientQuestions = questions.map(q => {
+            const correctOpt = q.Options.find(o => o.IsCorrect);
+            if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+            
             return {
                 QuestionID: q.QuestionID,
                 QuestionText: q.QuestionText,
+                QuestionType: q.QuestionType,
+                Explanation: q.Explanation,
                 Options: shuffleArray(q.Options.map(o => ({
                     OptionID: o.OptionID,
                     OptionText: o.OptionText
@@ -334,11 +441,15 @@ exports.showGrammar = async (req, res) => {
             };
         });
         
+        req.session.grammarAnswers = correctAnswers;
+        
         res.render('student/grammar', {
-            title: 'Circuitos y Ensamblaje',
+            title: questionType === 'part7_cloze_advanced' ? 'Gramática Avanzada' : 'Circuitos y Ensamblaje',
             cssFile: 'grammar.css',
             jsFile: 'grammar.js',
             activity,
+            passage: textData.passage,
+            passageTitle: textData.title,
             questions: clientQuestions,
             studentStats,
             user: req.session.user
@@ -357,28 +468,23 @@ exports.submitGrammar = async (req, res) => {
         const activity = await Module.getActivity(parseInt(activityId));
         if (!activity) return res.status(400).json({ error: 'Actividad no encontrada' });
         
-        const questions = await Module.getQuestions(parseInt(activityId));
-        const totalQ = questions.length;
+        const correctAnswers = req.session.grammarAnswers || {};
+        const totalQ = Object.keys(correctAnswers).length;
         let correctCount = 0;
         
         const results = [];
         
         if (answers && typeof answers === 'object') {
             Object.entries(answers).forEach(([qId, optId]) => {
-                const question = questions.find(q => q.QuestionID === parseInt(qId));
-                let isCorrect = false;
-                if (question) {
-                    const correctOpt = question.Options.find(o => o.IsCorrect);
-                    if (correctOpt && correctOpt.OptionID === parseInt(optId)) {
-                        correctCount++;
-                        isCorrect = true;
-                    }
+                const isCorrect = correctAnswers[qId] === parseInt(optId);
+                if (isCorrect) {
+                    correctCount++;
                 }
                 results.push({ questionId: qId, isCorrect });
             });
         }
         
-        const score = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 100;
+        const score = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
         const passed = score >= 60;
         
         const alreadyCompleted = await isAlreadyCompleted(userId, parseInt(activityId));
@@ -401,6 +507,10 @@ exports.submitGrammar = async (req, res) => {
         await Gamification.updateStreak(userId);
         await Gamification.checkAndAwardBadges(userId);
         
+        if (passed) {
+            delete req.session.grammarAnswers;
+        }
+        
         res.json({ success: true, xpEarned, coinsEarned, score, passed, correctCount, totalQ, results, alreadyCompleted });
     } catch (error) {
         console.error('Submit Grammar Error:', error);
@@ -408,6 +518,7 @@ exports.submitGrammar = async (req, res) => {
     }
 };
 
+// ── BOSS BATTLE (Evaluaciones de Corte) ─────────────────────────────
 exports.showBossBattle = async (req, res) => {
     try {
         const activityId = parseInt(req.params.activityId);
@@ -416,7 +527,6 @@ exports.showBossBattle = async (req, res) => {
         const activity = await Module.getActivity(activityId);
         if (!activity) return res.redirect('/student');
         
-        const questions = await Module.getQuestions(activityId);
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
         const student = req.session.user;
         
@@ -424,7 +534,23 @@ exports.showBossBattle = async (req, res) => {
             'SELECT WeekNumber FROM ModuleWeeks MW INNER JOIN Activities A ON MW.WeekID = A.WeekID WHERE A.ActivityID = @ActivityID',
             [{ name: 'ActivityID', type: sql.Int, value: activityId }]
         );
-        const cutNumber = weekResult.recordset.length > 0 ? Math.ceil(weekResult.recordset[0].WeekNumber / 4) : 1;
+        const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 4;
+        const cutNumber = Math.ceil(weekNumber / 4);
+        
+        // Seleccionar preguntas aleatorias según el corte
+        let questionTypes = [];
+        if (cutNumber === 1) {
+            // Corte 1: Parts 1, 2, 3 (A1-A2)
+            questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue'];
+        } else if (cutNumber === 2) {
+            // Corte 2: Parts 4, 5 (A2-B1)
+            questionTypes = ['part4_cloze', 'part5_reading'];
+        } else {
+            // Corte 3: Parts 6, 7 (B1-B2) - Evaluación integral
+            questionTypes = ['part6_critical', 'part7_cloze_advanced'];
+        }
+        
+        const questions = await Module.getRandomQuestionsFromPools(questionTypes, 15);
         
         // Map correct answers in session for security verification
         const correctAnswers = {};
@@ -437,6 +563,8 @@ exports.showBossBattle = async (req, res) => {
             return {
                 QuestionID: q.QuestionID,
                 QuestionText: q.QuestionText,
+                QuestionType: q.QuestionType,
+                Explanation: q.Explanation,
                 Options: shuffleArray(q.Options.map(o => ({
                     OptionID: o.OptionID,
                     OptionText: o.OptionText
@@ -517,9 +645,12 @@ exports.submitBossBattle = async (req, res) => {
         });
         
         let xpEarned = 0;
+        let coinsEarned = 0;
         if (passed && !alreadyCompleted) {
             xpEarned = activity.XPReward * 2; // double reward for boss battle first time
+            coinsEarned = activity.CoinReward * 2;
             await Gamification.addXP(userId, xpEarned, parseInt(activityId));
+            await Gamification.addCoins(userId, coinsEarned);
             await Gamification.awardBadge(userId, 4); // Badge ID 4: 'Asesino de Jefes'
         }
         
@@ -528,7 +659,7 @@ exports.submitBossBattle = async (req, res) => {
         
         delete req.session.bossAnswers;
         
-        res.json({ success: true, passed, score, correctCount, totalQuestions, xpEarned, alreadyCompleted });
+        res.json({ success: true, passed, score, correctCount, totalQuestions, xpEarned, coinsEarned, alreadyCompleted });
     } catch (error) {
         console.error('Submit Boss Battle Error:', error);
         res.status(500).json({ error: 'Error al procesar batalla' });

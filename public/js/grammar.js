@@ -1,125 +1,172 @@
 /* public/js/grammar.js */
 document.addEventListener('DOMContentLoaded', () => {
-    const circuitRows = document.querySelectorAll('.circuit-row');
+    const questionsDataElement = document.getElementById('questionsData');
+    if (!questionsDataElement) return;
+
+    const questionsData = JSON.parse(questionsDataElement.textContent);
+    if (!questionsData || questionsData.length === 0) return;
+
+    const clozeContainer = document.getElementById('clozeContainer');
     const submitBtn = document.getElementById('submitBtn');
-    let startTime = Date.now();
-    const answers = {};
+    const startTime = Date.now();
 
-    circuitRows.forEach(row => {
-        const questionId = row.dataset.questionId;
-        const socket = row.querySelector('.socket');
-        const chips = row.querySelectorAll('.chip-btn');
+    let attempts = 0;
 
-        chips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                // Remove selected class from all chips in this row
-                chips.forEach(c => c.classList.remove('selected'));
-                // Add to clicked chip
-                chip.classList.add('selected');
-                
-                // Update socket
-                socket.textContent = chip.textContent;
-                socket.classList.remove('empty');
-                socket.classList.add('filled');
-                
-                // Store answer
-                answers[questionId] = chip.dataset.optionId;
-                
-                // Mascota: feedback al seleccionar pieza
-                if (typeof triggerMascota === 'function') {
-                    triggerMascota('exito', '¡Pieza ensamblada! ⚡');
-                }
-                
-                checkCompletion();
+    // Render passage with inline selects
+    function renderCloze() {
+        let html = '';
+        if (passageTitle) {
+            html += `<h2 style="margin-bottom: 1rem; color: var(--accent-blue); text-align: center;">${passageTitle}</h2>`;
+        }
+
+        let formattedPassage = passageText.replace(/\n/g, '<br>');
+
+        // Replace blanks like (106) ________ with inline selects
+        let qIndex = 0;
+        formattedPassage = formattedPassage.replace(/\(\d+\)\s*_*/g, (match) => {
+            const q = questionsData[qIndex];
+            if (!q) return match; // fallback if more blanks than questions
+            
+            let selectHtml = `<select class="cloze-inline-select" data-qid="${q.QuestionID}" id="select-${q.QuestionID}">`;
+            selectHtml += `<option value="" disabled selected>---</option>`;
+            q.Options.forEach(opt => {
+                selectHtml += `<option value="${opt.OptionID}">${opt.OptionText}</option>`;
             });
+            selectHtml += `</select>`;
+            
+            qIndex++;
+            return selectHtml;
         });
 
-        // Click on socket to clear it
-        socket.addEventListener('click', () => {
-            socket.innerHTML = '<span class="placeholder">...</span>';
-            socket.classList.add('empty');
-            socket.classList.remove('filled');
-            chips.forEach(c => c.classList.remove('selected'));
-            delete answers[questionId];
-            checkCompletion();
-        });
-    });
+        html += `<div class="cloze-passage-content" style="font-size: 1.2rem; line-height: 2; padding: 2rem; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); color: var(--text-primary);">
+            ${formattedPassage}
+        </div>`;
 
-    function checkCompletion() {
-        const answeredCount = Object.keys(answers).length;
-        submitBtn.disabled = answeredCount < totalQuestions;
+        clozeContainer.innerHTML = html;
+        submitBtn.style.display = 'inline-block';
     }
+
+    renderCloze();
 
     submitBtn.addEventListener('click', async () => {
+        const selects = document.querySelectorAll('.cloze-inline-select');
+        const answers = {};
+        let allAnswered = true;
+
+        selects.forEach(select => {
+            select.classList.remove('error-highlight');
+            if (!select.value) {
+                allAnswered = false;
+                select.classList.add('error-highlight');
+            } else {
+                answers[select.dataset.qid] = select.value;
+            }
+        });
+
+        if (!allAnswered) {
+            if (typeof triggerMascota === 'function') triggerMascota('info', 'Por favor, completa todos los espacios en blanco.');
+            return;
+        }
+
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Procesando Energía...';
-        
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+        submitBtn.textContent = 'Verificando...';
+        attempts++;
+
+        const timeSpent = Math.round((Date.now() - startTime) / 1000);
 
         try {
-            const response = await fetch('/game/grammar/submit', {
+            const res = await fetch('/game/grammar/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ activityId, answers, timeSpent })
+                body: JSON.stringify({
+                    activityId,
+                    answers: answers,
+                    timeSpent: timeSpent
+                })
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-                animateCircuits(result);
-            } else {
-                alert('Error al validar respuestas: ' + (result.error || 'Error desconocido'));
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Energizar Circuitos';
+            const data = await res.json();
+            
+            // Highlight correct/incorrect selects based on results
+            if (data.results) {
+                data.results.forEach(r => {
+                    const select = document.getElementById(`select-${r.questionId}`);
+                    if (select) {
+                        select.disabled = true;
+                        if (r.isCorrect) {
+                            select.style.borderBottom = '3px solid var(--success-color)';
+                            select.style.color = 'var(--success-color)';
+                        } else {
+                            select.style.borderBottom = '3px solid var(--error-color)';
+                            select.style.color = 'var(--error-color)';
+                        }
+                    }
+                });
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión.');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Energizar Circuitos';
-        }
-    });
 
-    function animateCircuits(result) {
-        // Animate each row based on results
-        result.results.forEach(res => {
-            const row = document.querySelector(`.circuit-row[data-question-id="${res.questionId}"]`);
-            if (row) {
-                if (res.isCorrect) {
-                    row.classList.add('success');
+            if (data.passed) {
+                showGameResultModal({
+                    passed: true,
+                    title: '🎉 ¡Excelente Trabajo!',
+                    xp: data.xpEarned || 0,
+                    coins: data.coinsEarned || 0,
+                    score: data.score,
+                    correct: data.correctCount,
+                    total: data.totalQ,
+                    message: data.alreadyCompleted ? '¡Actividad completada previamente!' : '¡Has superado esta actividad!'
+                });
+            } else {
+                if (attempts >= 2) {
+                    showGameResultModal({
+                        passed: false,
+                        title: '😢 ¡Intento Fallido!',
+                        xp: 0,
+                        coins: 0,
+                        score: data.score,
+                        correct: data.correctCount,
+                        total: data.totalQ,
+                        message: 'Has agotado tus 2 intentos. ¡Vuelve al mapa y estudia un poco más para la próxima!'
+                    });
                 } else {
-                    row.classList.add('error');
+                    // If failed, they must repeat.
+                    if (typeof triggerMascota === 'function') triggerMascota('error', 'Cortocircuito detectado 🛠️. Tienes 1 intento más.');
+                    setTimeout(() => {
+                        // Reset only incorrect selects so they can try again
+                        selects.forEach(select => {
+                            const qId = select.dataset.qid;
+                            const result = data.results && data.results.find(r => r.questionId == qId);
+                            
+                            if (result && result.isCorrect) {
+                                // Keep correct ones disabled and green
+                                select.disabled = true;
+                                select.style.borderBottom = '3px solid var(--success-color)';
+                                select.style.color = 'var(--success-color)';
+                            } else {
+                                // Clear incorrect ones
+                                select.disabled = false;
+                                select.value = '';
+                                select.style.borderBottom = '2px solid var(--accent-blue)';
+                                select.style.color = 'var(--text-primary)';
+                            }
+                        });
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Verificar Respuestas';
+                    }, 3000);
                 }
             }
-        });
 
-        // Wait for animations to play before showing modal
-        setTimeout(() => {
-            showResults(result);
-        }, 1500); // 1.5s delay to admire the circuit lighting
-    }
-
-    function showResults(result) {
-        showGameResultModal({
-            passed: result.passed,
-            title: result.passed ? '¡Sistemas en Línea!' : 'Falla del Sistema',
-            xp: result.xpEarned,
-            coins: result.coinsEarned,
-            score: result.score,
-            correct: result.correctCount,
-            total: result.totalQ,
-            message: result.passed 
-                ? (result.alreadyCompleted 
-                    ? 'Actividad completada previamente, no otorga recompensas extra.' 
-                    : `Has ensamblado correctamente ${result.correctCount} de ${result.totalQ} circuitos.`)
-                : `Cortocircuito. Solo ${result.correctCount} de ${result.totalQ} correctos. Necesitas un 60%.`
-        });
-    }
+        } catch (err) {
+            console.error('Submit error:', err);
+            alert('Error enviando los resultados.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Verificar Respuestas';
+        }
+    });
 });
 
 function showGameResultModal(opts) {
     const victoryMemes = ['/images/memes/victory1.jpg', '/images/memes/victory2.jpg', '/images/memes/victory3.jpg'];
     const defeatMemes = ['/images/memes/defeat1.jpg'];
+    
     const memeList = opts.passed ? victoryMemes : defeatMemes;
     const meme = memeList[Math.floor(Math.random() * memeList.length)];
     
@@ -144,7 +191,7 @@ function showGameResultModal(opts) {
         launchConfetti();
         if (typeof triggerMascota === 'function') triggerMascota('exito', '¡Circuitos activados! ⚡');
     } else {
-        if (typeof triggerMascota === 'function') triggerMascota('error', 'Cortocircuito detectado 🛠️');
+        if (typeof triggerMascota === 'function') triggerMascota('error', '¡No te rindas! Sigue practicando.');
     }
     requestAnimationFrame(() => { requestAnimationFrame(() => { overlay.classList.add('active'); }); });
 }

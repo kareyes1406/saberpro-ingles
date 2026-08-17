@@ -23,6 +23,7 @@ const authRoutes    = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const gameRoutes    = require('./routes/gameRoutes');
 const adminRoutes   = require('./routes/adminRoutes');
+const examRoutes    = require('./routes/examRoutes');
 
 // Conexión a Azure SQL Server
 const { testConnection, executeQuery } = require('./config/database');
@@ -127,6 +128,7 @@ app.use('/auth', authRoutes);
 app.use('/student', requireAuth, studentRoutes);
 app.use('/game', requireAuth, gameRoutes);
 app.use('/admin', requireAdmin, adminRoutes);
+app.use('/exam', requireAuth, examRoutes);
 
 // ── 404 — Página No Encontrada ──────────────────────────────────────
 app.use((req, res) => {

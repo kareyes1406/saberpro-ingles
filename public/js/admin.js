@@ -4,6 +4,10 @@
  * Charts con Chart.js (CDN), CRUD de usuarios
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // Forzar renderizado de gráficas en alta resolución (3x) para que el PDF se vea ultra nítido
+    if (window.Chart) {
+        Chart.defaults.devicePixelRatio = 3;
+    }
     loadCharts();
     setupSearch();
     animateKPIs();
@@ -201,13 +205,22 @@ async function submitUserForm() {
     btn.disabled = true;
 
     const userId = document.getElementById('formUserId').value;
-    const data = {
-        firstName: document.getElementById('formFirstName').value,
-        lastName: document.getElementById('formLastName').value,
-        email: document.getElementById('formEmail').value,
-        password: document.getElementById('formPassword').value,
-        isActive: document.getElementById('formActive').value
-    };
+    const firstName = document.getElementById('formFirstName').value;
+    const lastName = document.getElementById('formLastName').value;
+    const email = document.getElementById('formEmail').value;
+    const isActive = document.getElementById('formActive').value;
+    const password = document.getElementById('formPassword').value;
+
+    const data = { firstName, lastName, email, isActive };
+    if (!userId) {
+        if (!password) {
+            btn.textContent = 'Error: Contraseña obligatoria';
+            btn.style.backgroundColor = 'red';
+            setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = ''; btn.disabled = false; }, 3000);
+            return;
+        }
+        data.password = password;
+    }
     
     try {
         const url = userId ? `/admin/users/${userId}` : '/admin/users';
@@ -291,32 +304,114 @@ function exportToCSV() {
 async function exportDashboardPDF() {
     const btn = document.querySelector('button[onclick="exportDashboardPDF()"]');
     const originalText = btn.textContent;
-    btn.textContent = 'Generando...';
+    btn.textContent = 'Construyendo Documento...';
     btn.disabled = true;
 
-    // Seleccionamos todo el layout principal
-    const element = document.getElementById('pdf-content');
-    
-    // Opciones para la librería html2pdf
-    const opt = {
-      margin:       [10, 10, 10, 10],
-      filename:     `SaberPro_Informe_${new Date().toISOString().split('T')[0]}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
-          scrollY: 0,
-          windowHeight: element.scrollHeight 
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
-
     try {
-        await html2pdf().set(opt).from(element).save();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        let yPos = 20;
+
+        // Título del documento
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(40, 40, 40);
+        doc.text("INFORME DE RENDIMIENTO ACADÉMICO", pageWidth/2, yPos, { align: 'center' });
+        yPos += 8;
+        
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Plataforma SaberPro Inglés", pageWidth/2, yPos, { align: 'center' });
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.text("Fecha: " + new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }), pageWidth/2, yPos, { align: 'center' });
+        yPos += 20;
+
+        // Sección 1: Resumen Ejecutivo
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(124, 58, 237); // Color primario
+        doc.text("1. Resumen Ejecutivo", margin, yPos);
+        yPos += 8;
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        
+        const totalU = document.getElementById('totalUsers').textContent;
+        const compRate = document.getElementById('completionRate').textContent;
+        const abandRate = document.getElementById('abandonRate').textContent;
+        const timeRate = document.getElementById('avgTime').textContent;
+
+        doc.text(`Total de Estudiantes Activos: ${totalU}`, margin, yPos);
+        yPos += 7;
+        doc.text(`Tasa Promedio de Finalización: ${compRate}`, margin, yPos);
+        yPos += 7;
+        doc.text(`Tasa de Abandono (riesgo): ${abandRate}`, margin, yPos);
+        yPos += 7;
+        doc.text(`Tiempo Promedio por Módulo: ${timeRate}`, margin, yPos);
+        yPos += 15;
+
+        // Función auxiliar para agregar gráficas si existen
+        const addChartToPDF = (canvasId, title, color, height = 80) => {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            // Check si hay espacio en la página
+            if (yPos + height + 10 > 280) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...color);
+            doc.text(title, margin, yPos);
+            yPos += 8;
+
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            doc.addImage(imgData, 'PNG', margin, yPos, 170, height);
+            yPos += height + 15;
+        };
+
+        // Sección 2: Análisis de Competencias (Pre-test vs Módulos)
+        addChartToPDF('preVsModuleChart', '2. Evolución de Competencias (Pre-Test vs Actual)', [6, 182, 212]);
+
+        // Sección 3: K-Means Clustering (Inteligencia Artificial)
+        addChartToPDF('clusterChart', '3. Clasificación K-Means (Grupos de Rendimiento)', [245, 158, 11], 100);
+
+        // Sección 4: Distribución y Ranking
+        addChartToPDF('levelDistChart', '4. Distribución de Niveles de XP (Gamificación)', [124, 58, 237], 100);
+        addChartToPDF('topStudentsChart', '5. Top 10 Estudiantes (Ranking General)', [236, 72, 153], 90);
+
+        // Sección 5: Tasa de Finalización Histórica y Tiempos
+        addChartToPDF('completionChart', '6. Histórico de Efectividad (Semana a Semana)', [16, 185, 129]);
+        addChartToPDF('timeChart', '7. Tiempo Promedio de Resolución por Semana', [6, 182, 212]);
+        
+        // Sección 6: Efectividad y Actividad
+        addChartToPDF('effectivenessChart', '8. Efectividad Histórica por Módulo', [239, 68, 68], 100);
+        addChartToPDF('activityChart', '9. Actividad en la Plataforma (Últimos 7 Días)', [245, 158, 11]);
+
+        // Pie de página oficial
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        for(let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.text(`Generado por IA - SaberPro Inglés - Página ${i} de ${pageCount}`, pageWidth/2, 290, { align: 'center' });
+        }
+
+        // Descargar el documento
+        doc.save(`Reporte_SaberPro_${new Date().toISOString().split('T')[0]}.pdf`);
+
     } catch(e) {
         console.error('Error PDF:', e);
-        alert('Hubo un error generando el PDF');
+        alert('Hubo un error construyendo el PDF: ' + e.message);
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;

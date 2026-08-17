@@ -1,6 +1,6 @@
 /* public/css/grammar.css */
 .game-container {
-    max-width: 1200px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 2rem;
     animation: fadeIn 0.5s ease-out;
@@ -32,222 +32,58 @@
     margin: 0;
 }
 
-.grammar-workspace {
-    background: #0b1120;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    box-shadow: 0 0 40px rgba(59, 130, 246, 0.05) inset;
-    margin-bottom: 2rem;
-}
-
-.circuit-board {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.circuit-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    position: relative;
-    padding: 1rem 0;
-}
-
-.power-source, .power-receiver {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #1e293b;
-    border: 2px solid #334155;
-    border-radius: 50%;
-    z-index: 2;
-    transition: all 0.3s ease;
-}
-
-.energy-node {
-    width: 12px;
-    height: 12px;
-    background: #475569;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-}
-
-.circuit-line {
-    flex: 1;
-    height: 4px;
-    background: #334155;
-    position: relative;
-    transition: all 0.5s ease;
-    overflow: hidden;
-}
-
-/* Light beam animation */
-.circuit-line::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-    transition: all 0.5s ease;
-}
-
-.circuit-component {
-    flex: 6;
-    background: linear-gradient(145deg, #1e293b, #0f172a);
-    border: 1px solid #334155;
-    border-radius: 12px;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    position: relative;
-    z-index: 2;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-}
-
-.sentence-box {
-    font-size: 1.1rem;
+.cloze-passage-content {
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 2.2;
+    font-size: 1.25rem;
     color: #e2e8f0;
-    line-height: 2;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.socket {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 100px;
-    height: 36px;
-    padding: 0 1rem;
-    background: #0f172a;
-    border: 2px dashed #475569;
-    border-radius: 6px;
-    color: #38bdf8;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.socket.filled {
-    border-style: solid;
-    border-color: #38bdf8;
-    background: rgba(56, 189, 248, 0.1);
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2) inset;
-}
-
-.socket .placeholder {
-    color: #475569;
-}
-
-.options-rack {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding-top: 1rem;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.chip-btn {
     background: #1e293b;
-    border: 1px solid #475569;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cloze-inline-select {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 0.5rem;
+    padding: 0.25rem 1rem;
+    font-size: 1.1rem;
+    font-family: inherit;
+    font-weight: 600;
     color: #cbd5e1;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.95rem;
+    background: #0f172a;
+    border: none;
+    border-bottom: 3px solid #3b82f6;
+    border-radius: 4px;
+    appearance: none;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: inherit;
+    min-width: 120px;
+    text-align: center;
+    outline: none;
 }
 
-.chip-btn:hover {
-    background: #334155;
-    border-color: #94a3b8;
+.cloze-inline-select:hover {
+    background: #1e293b;
+    border-bottom-color: #60a5fa;
 }
 
-.chip-btn.selected {
-    background: #0284c7;
-    border-color: #38bdf8;
-    color: #fff;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
-    transform: translateY(-2px);
+.cloze-inline-select:focus {
+    background: #1e293b;
+    border-bottom-color: #38bdf8;
+    box-shadow: 0 4px 10px rgba(56, 189, 248, 0.2);
 }
 
-/* Success States (Circuit Lighting) */
-.circuit-row.success .power-source,
-.circuit-row.success .power-receiver,
-.circuit-row.success .circuit-component {
-    border-color: #10b981;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+.cloze-inline-select option {
+    background: #0f172a;
+    color: #e2e8f0;
 }
 
-.circuit-row.success .energy-node {
-    background: #10b981;
-    box-shadow: 0 0 15px #10b981;
-}
-
-.circuit-row.success .circuit-line {
-    background: #10b981;
-    box-shadow: 0 0 10px #10b981;
-}
-
-.circuit-row.success .circuit-line::after {
-    animation: lightBeam 1s infinite linear;
-}
-
-.circuit-row.success .socket {
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
-}
-
-/* Error States (Short Circuit) */
-.circuit-row.error .power-source,
-.circuit-row.error .power-receiver,
-.circuit-row.error .circuit-component {
-    border-color: #ef4444;
-    animation: shake 0.5s ease-in-out;
-}
-
-.circuit-row.error .energy-node {
-    background: #ef4444;
-    box-shadow: 0 0 10px #ef4444;
-}
-
-.circuit-row.error .circuit-line {
-    background: #ef4444;
-}
-
-.circuit-row.error .socket {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
-    color: #f87171;
-}
-
-@keyframes lightBeam {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-5px); }
-    40%, 80% { transform: translateX(5px); }
-}
-
-.game-actions {
-    display: flex;
-    justify-content: center;
-    margin-top: 2rem;
+.cloze-inline-select.error-highlight {
+    border-bottom-color: #ef4444;
+    animation: shake 0.4s ease-in-out;
 }
 
 .btn-primary {
@@ -256,7 +92,7 @@
     border: none;
     padding: 1rem 3rem;
     border-radius: 9999px;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -269,64 +105,16 @@
 }
 
 .btn-primary:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
-    background: #334155;
-    box-shadow: none;
+    transform: none;
 }
 
-/* Modals */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    opacity: 1;
-    transition: opacity 0.3s ease;
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
-
-.modal.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.modal-content {
-    background: #1e293b;
-    padding: 3rem;
-    border-radius: 24px;
-    text-align: center;
-    max-width: 400px;
-    width: 90%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-.result-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin: 2rem 0;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 1.5rem;
-    border-radius: 16px;
-}
-
-.stat {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.1rem;
-}
-
-.stat.xp-earned .value { color: #f59e0b; font-weight: bold; }
-.stat.coins-earned .value { color: #eab308; font-weight: bold; }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -334,15 +122,6 @@
 }
 
 @media (max-width: 768px) {
-    .circuit-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .power-source, .power-receiver, .circuit-line {
-        display: none;
-    }
-    
     .game-container {
         padding: 1rem;
     }
@@ -352,21 +131,16 @@
         gap: 1rem;
         text-align: center;
     }
+
+    .cloze-passage-content {
+        padding: 1.5rem;
+        font-size: 1.1rem;
+        line-height: 2;
+    }
     
-    .sentence-box {
+    .cloze-inline-select {
         font-size: 1rem;
-    }
-    
-    .options-rack {
-        justify-content: center;
-    }
-    
-    .chip-btn {
-        font-size: 0.9rem;
-        padding: 0.5rem 0.75rem;
-    }
-    
-    .activity-info h1 {
-        font-size: 1.4rem;
+        min-width: 100px;
+        padding: 0.2rem 0.5rem;
     }
 }

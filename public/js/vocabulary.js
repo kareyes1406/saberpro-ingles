@@ -94,6 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     submitBtn.addEventListener('click', async () => {
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Procesando...';
+        
         try {
             const res = await fetch('/game/vocabulary/submit', {
                 method: 'POST',
@@ -119,9 +123,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? 'Ya habías completado esta actividad. No se otorgan recompensas extra.'
                         : '¡Has emparejado todas las palabras correctamente!'
                 });
+            } else {
+                throw new Error(data.error || 'Error al enviar resultados');
             }
         } catch (err) {
             console.error('Error submitting vocab:', err);
+            showGameResultModal({
+                passed: false,
+                title: 'Error de Conexión',
+                xp: 0, coins: 0, score: 0, correct: 0, total: typeof TOTAL_PAIRS !== 'undefined' ? TOTAL_PAIRS : 10,
+                message: 'No pudimos registrar tu puntaje. Revisa tu conexión e intenta de nuevo.'
+            });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
         }
     });
 });

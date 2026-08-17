@@ -13,6 +13,13 @@ exports.showRoadmap = async (req, res) => {
         const userId = req.session.userId;
         const moduleId = 1; // Inglés Saber Pro
         
+        // Check if Pre-Test is completed
+        const preTestQuery = `SELECT 1 FROM UserExams WHERE UserID = @UserID AND ExamType = 'PRE'`;
+        const preTestResult = await executeQuery(preTestQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);
+        if (preTestResult.recordset.length === 0) {
+            return res.redirect('/exam/pre-test');
+        }
+
         // Get module weeks
         const weeks = await Module.getWeeks(moduleId);
         
@@ -78,6 +85,7 @@ exports.showRoadmap = async (req, res) => {
             weeks: enrichedWeeks,
             badges: allBadges,
             studentStats,
+            allWeeksCompleted: previousCompleted,
             user: req.session.user
         });
         
@@ -127,6 +135,13 @@ exports.showWeek = async (req, res) => {
     try {
         const userId = req.session.userId;
         const weekId = parseInt(req.params.weekId);
+
+        // Check if Pre-Test is completed
+        const preTestQuery = `SELECT 1 FROM UserExams WHERE UserID = @UserID AND ExamType = 'PRE'`;
+        const preTestResult = await executeQuery(preTestQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);
+        if (preTestResult.recordset.length === 0) {
+            return res.redirect('/exam/pre-test');
+        }
         
         // Get week details
         const weekResult = await executeQuery('SELECT * FROM ModuleWeeks WHERE WeekID = @WeekID', [
@@ -215,14 +230,19 @@ exports.showProfile = async (req, res) => {
         const progressStats = await Progress.getCompletionStats(userId) || {
             TotalActivities: 0, CompletedActivities: 0, AverageScore: 0
         };
+
+        // AI Assistant Data
+        const AIAssistantService = require('../services/aiAssistantService');
+        const aiReport = await AIAssistantService.generatePersonalizedReport(userId);
         
         res.render('student/profile', {
             title: 'Mi Perfil de Estudiante',
-            cssFile: 'main.css',
+            cssFile: 'profile.css',
             jsFile: null,
             studentStats,
             badges: earnedBadges,
             progressStats,
+            aiReport,
             student: req.session.user,
             user: req.session.user
         });

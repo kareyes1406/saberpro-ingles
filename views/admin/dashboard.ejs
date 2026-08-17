@@ -3,8 +3,8 @@
 <!-- Page Header -->
 <div id="pdf-content" style="padding: 10px;">
 <div class="page-header">
-  <h1>📊 Dashboard</h1>
-  <p style="color:var(--text-secondary)">Bienvenido, <%= user.FirstName %></p>
+  <h1>📊 Dashboard Analítico</h1>
+  <p style="color:var(--text-secondary)">Bienvenido, <%= user.FirstName %> — Vista de Analítica Avanzada + Modelos ML</p>
 </div>
 
 <!-- KPI Cards -->
@@ -39,7 +39,7 @@
   </div>
 </div>
 
-<!-- Charts -->
+<!-- ORIGINAL Charts Row 1 -->
 <div class="charts-grid" id="charts-section">
   <div class="chart-card">
     <h3>Tasa de Finalización por Semana</h3>
@@ -56,6 +56,32 @@
   <div class="chart-card">
     <h3>Actividad Últimos 7 Días</h3>
     <div class="chart-container"><canvas id="activityChart"></canvas></div>
+  </div>
+</div>
+
+<!-- NEW Charts Row 2 -->
+<h2 style="margin: 2rem 0 1rem; font-size: 1.3rem; color: var(--accent-cyan); display:flex; align-items:center; gap:0.5rem;">🔬 Analítica Avanzada</h2>
+<div class="charts-grid">
+  <div class="chart-card">
+    <h3>Pre-Test vs Módulos — Comparativo de Competencias</h3>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:0.5rem;">Promedio grupal: Puntaje Pre-Test vs Desempeño en Módulos</p>
+    <div class="chart-container"><canvas id="preVsModuleChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>Distribución de Niveles de Jugador</h3>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:0.5rem;">Cuántos estudiantes hay en cada nivel de XP</p>
+    <div class="chart-container"><canvas id="levelDistChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>🏆 Top 10 Estudiantes por XP</h3>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:0.5rem;">Ranking de los mejores estudiantes</p>
+    <div class="chart-container"><canvas id="topStudentsChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>🤖 K-Means Clustering — Grupos de Rendimiento</h3>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:0.5rem;">Clasificación automática de estudiantes por rendimiento</p>
+    <div class="chart-container"><canvas id="clusterChart"></canvas></div>
+    <div id="clusterLegend" style="margin-top:0.75rem;"></div>
   </div>
 </div>
 
@@ -93,6 +119,7 @@
           </td>
           <td>
             <div class="action-btns">
+              <a href="/admin/students/<%= user.UserID %>/detail" class="btn-icon" title="Ver Progreso Detallado" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; border-radius:6px; padding:0.4rem 0.5rem;">👁️</a>
               <button class="btn-icon edit" 
                       data-user-id="<%= user.UserID %>"
                       data-first-name="<%= user.FirstName %>"
@@ -115,6 +142,77 @@
   </table>
 </div>
 </div> <!-- End pdf-content -->
+
+<!-- Official PDF Report Template (Hidden) -->
+<div id="official-report-template" style="display:none; background:white; color:black; font-family:Arial, sans-serif; padding:40px; width:800px;">
+  <!-- Header -->
+  <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:20px; margin-bottom:30px;">
+    <h1 style="margin:0; font-size:24px; color:#333;">INFORME DE RENDIMIENTO ACADÉMICO</h1>
+    <h2 style="margin:5px 0 0; font-size:18px; color:#555;">Plataforma SaberPro Inglés</h2>
+    <p style="margin:10px 0 0; font-size:14px; color:#777;" id="report-date"></p>
+  </div>
+
+  <!-- Summary Section -->
+  <div style="margin-bottom:30px;">
+    <h3 style="border-left:4px solid #7c3aed; padding-left:10px; font-size:18px; color:#333;">1. Resumen Ejecutivo</h3>
+    <p style="font-size:14px; line-height:1.6; color:#444;">
+      El presente informe detalla el progreso general de los estudiantes en la plataforma de preparación SaberPro Inglés.
+      Actualmente, la plataforma cuenta con <strong id="rep-total-users"></strong> estudiantes activos.
+    </p>
+    <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:14px;">
+      <tr>
+        <td style="padding:10px; border:1px solid #ddd; background:#f9f9f9; font-weight:bold; width:50%;">Tasa de Finalización de Módulos:</td>
+        <td style="padding:10px; border:1px solid #ddd;" id="rep-completion"></td>
+      </tr>
+      <tr>
+        <td style="padding:10px; border:1px solid #ddd; background:#f9f9f9; font-weight:bold;">Tasa de Abandono (Inactividad > 7 días):</td>
+        <td style="padding:10px; border:1px solid #ddd;" id="rep-abandon"></td>
+      </tr>
+      <tr>
+        <td style="padding:10px; border:1px solid #ddd; background:#f9f9f9; font-weight:bold;">Tiempo Promedio por Evaluación:</td>
+        <td style="padding:10px; border:1px solid #ddd;" id="rep-time"></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Charts Section -->
+  <div style="margin-bottom:30px;">
+    <h3 style="border-left:4px solid #06b6d4; padding-left:10px; font-size:18px; color:#333;">2. Análisis de Competencias (Pre-Test vs Actual)</h3>
+    <p style="font-size:14px; line-height:1.6; color:#444; margin-bottom:15px;">
+      La siguiente gráfica muestra el comparativo entre el nivel diagnóstico inicial de los estudiantes y su desempeño actual promedio en los módulos de la plataforma, evidenciando la evolución en cada competencia evaluada.
+    </p>
+    <div style="text-align:center;">
+      <img id="rep-chart-competencies" src="" style="max-width:100%; height:auto; border:1px solid #eee; padding:10px;">
+    </div>
+  </div>
+
+  <div class="html2pdf__page-break"></div> <!-- Salto de página para PDF -->
+
+  <div style="margin-bottom:30px;">
+    <h3 style="border-left:4px solid #f59e0b; padding-left:10px; font-size:18px; color:#333;">3. Clasificación K-Means (Inteligencia Artificial)</h3>
+    <p style="font-size:14px; line-height:1.6; color:#444; margin-bottom:15px;">
+      El algoritmo de Machine Learning ha clasificado automáticamente a los estudiantes en grupos de rendimiento basándose en su XP total, calificaciones y constancia. Esto permite identificar rápidamente a la población en riesgo.
+    </p>
+    <div style="text-align:center;">
+      <img id="rep-chart-kmeans" src="" style="max-width:80%; height:auto; border:1px solid #eee; padding:10px;">
+    </div>
+  </div>
+
+  <div style="margin-bottom:30px;">
+    <h3 style="border-left:4px solid #10b981; padding-left:10px; font-size:18px; color:#333;">4. Histórico de Efectividad y Retención</h3>
+    <p style="font-size:14px; line-height:1.6; color:#444; margin-bottom:15px;">
+      Evolución de la tasa de completitud semana a semana a lo largo del programa.
+    </p>
+    <div style="text-align:center;">
+      <img id="rep-chart-completion" src="" style="max-width:100%; height:auto; border:1px solid #eee; padding:10px;">
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center; border-top:1px solid #ddd; padding-top:15px; margin-top:40px; font-size:12px; color:#888;">
+    Documento autogenerado por Inteligencia Artificial - SaberPro Inglés
+  </div>
+</div>
 
 <!-- CRUD Modal -->
 <div class="modal-overlay" id="userModal" data-html2canvas-ignore="true">
@@ -157,5 +255,223 @@
     </div>
   </div>
 </div>
+
+<!-- Extra JS for new charts -->
+<script>
+// Extend existing admin.js chart loading with new charts
+document.addEventListener('DOMContentLoaded', async () => {
+    // Wait for the original admin.js kpis fetch (it fetches /admin/kpis/data)
+    // We will piggyback here with our own fetch
+    try {
+        const res = await fetch('/admin/kpis/data');
+        const data = await res.json();
+
+        // --- CHART 5: Pre-Test vs Módulos (Grouped Bar) ---
+        const preAvgs = data.preTestAvgs || {};
+        const moduleMap = {};
+        (data.moduleAvgs || []).forEach(m => { moduleMap[m.TypeName] = parseFloat(m.AvgScore || 0); });
+
+        const preVsCtx = document.getElementById('preVsModuleChart').getContext('2d');
+        new Chart(preVsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Vocabulario', 'Comprensión Lectora', 'Pragmática', 'Gramática'],
+                datasets: [
+                    {
+                        label: 'Pre-Test',
+                        data: [
+                            Math.round(preAvgs.AvgVocab || 0),
+                            Math.round(preAvgs.AvgReading || 0),
+                            Math.round(preAvgs.AvgPragmatics || 0),
+                            Math.round(preAvgs.AvgGrammar || 0)
+                        ],
+                        backgroundColor: 'rgba(124, 58, 237, 0.6)',
+                        borderColor: 'rgba(124, 58, 237, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Módulos (Promedio Actual)',
+                        data: [
+                            Math.round(moduleMap['Vocabulary'] || 0),
+                            Math.round(moduleMap['Reading'] || 0),
+                            Math.round(moduleMap['Pragmatics'] || 0),
+                            Math.round(moduleMap['Grammar'] || 0)
+                        ],
+                        backgroundColor: 'rgba(6, 182, 212, 0.6)',
+                        borderColor: 'rgba(6, 182, 212, 1)',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#94a3b8' } } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { min: 0, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+
+        // --- CHART 6: XP Level Distribution (Doughnut) ---
+        const xpDist = data.xpDistribution || [];
+        const lvlCtx = document.getElementById('levelDistChart').getContext('2d');
+        const COLORS = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#0ea5e9'];
+        new Chart(lvlCtx, {
+            type: 'doughnut',
+            data: {
+                labels: xpDist.map(l => `Nivel ${l.Level}`),
+                datasets: [{
+                    data: xpDist.map(l => l.StudentCount),
+                    backgroundColor: xpDist.map((_, i) => COLORS[i % COLORS.length]),
+                    borderWidth: 2,
+                    borderColor: '#0f1628'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } }
+                }
+            }
+        });
+
+        // --- CHART 7: Top 10 Students by XP (Horizontal Bar) ---
+        const topS = data.topStudents || [];
+        const topCtx = document.getElementById('topStudentsChart').getContext('2d');
+        new Chart(topCtx, {
+            type: 'bar',
+            data: {
+                labels: topS.map(s => s.FullName),
+                datasets: [{
+                    label: 'XP Total',
+                    data: topS.map(s => s.TotalXP),
+                    backgroundColor: topS.map((_, i) => i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : 'rgba(124, 58, 237, 0.6)'),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
+
+        // --- CHART 8: K-Means Cluster Pie ---
+        const clusters = data.clusterSummary || [];
+        const clCtx = document.getElementById('clusterChart').getContext('2d');
+        new Chart(clCtx, {
+            type: 'pie',
+            data: {
+                labels: clusters.map(c => c.name),
+                datasets: [{
+                    data: clusters.map(c => c.count),
+                    backgroundColor: clusters.map(c => c.color + 'cc'),
+                    borderColor: clusters.map(c => c.color),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } } }
+            }
+        });
+
+        // Render cluster legend cards
+        const clusterLegend = document.getElementById('clusterLegend');
+        if (clusterLegend && clusters.length > 0) {
+            clusterLegend.innerHTML = clusters.map(c => `
+                <div style="display:inline-block; margin:0.25rem; padding:0.5rem 0.75rem; background:${c.color}22; border:1px solid ${c.color}; border-radius:8px; font-size:0.8rem;">
+                    <span style="color:${c.color}; font-weight:700;">${c.name}</span>
+                    <span style="color:#94a3b8; margin-left:0.5rem;">${c.count} estudiantes · Promedio: ${c.avgScore}%</span>
+                </div>
+            `).join('');
+        }
+
+    } catch (e) {
+        console.warn('Error loading extended analytics:', e);
+    }
+});
+</script>
+
+<style>
+/* 
+ * Optimizaciones para la exportación a PDF (html2pdf)
+ * Se aplican temporalmente mediante la clase .pdf-export-mode
+ */
+.pdf-export-mode {
+    background-color: #0f1628 !important; /* Fondo limpio y oscuro estándar */
+    color: #f8fafc !important;
+    padding: 20px 40px !important;
+}
+
+/* Evitar que las gráficas y tarjetas se corten entre páginas */
+.pdf-export-mode .chart-card, 
+.pdf-export-mode .kpi-card, 
+.pdf-export-mode .table-container {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    box-shadow: none !important;
+    margin-bottom: 20px;
+}
+
+/* Forzar fondos para que html2canvas los pinte (algunos navegadores ignoran background-colors transparentes en lienzo) */
+.pdf-export-mode .kpi-card {
+    background-color: rgba(255,255,255,0.03) !important;
+}
+.pdf-export-mode .chart-card {
+    background-color: rgba(255,255,255,0.03) !important;
+}
+
+/* Asegurar que las cuadrículas mantengan su forma (gracias a windowWidth 1280) */
+.pdf-export-mode .kpi-grid {
+    gap: 15px !important;
+    margin-bottom: 30px !important;
+}
+
+.pdf-export-mode .charts-grid {
+    gap: 20px !important;
+    margin-bottom: 30px !important;
+}
+
+/* Ocultar elementos interactivos y botones de acción que no sirven en el PDF */
+.pdf-export-mode .table-header-actions button,
+.pdf-export-mode .table-header-actions input {
+    display: none !important;
+}
+
+/* Ocultar la columna de acciones en la tabla */
+.pdf-export-mode #usersTable th:last-child,
+.pdf-export-mode #usersTable td:last-child {
+    display: none !important;
+}
+
+.pdf-export-mode #usersTable th, 
+.pdf-export-mode #usersTable td {
+    padding: 10px !important;
+    font-size: 0.85rem !important;
+}
+
+/* Asegurar que el scroll no afecte la tabla */
+.pdf-export-mode .table-container {
+    overflow: visible !important;
+}
+
+/* Agregar un pie de página o marca de agua en modo PDF */
+.pdf-export-mode::after {
+    content: "Reporte generado por SaberPro Inteligencia Artificial - Uso Oficial";
+    display: block;
+    text-align: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.8rem;
+    margin-top: 40px;
+    page-break-inside: avoid;
+}
+</style>
 
 <%- include('../partials/admin-footer') %>

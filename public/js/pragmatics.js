@@ -1,141 +1,155 @@
 /* public/js/pragmatics.js */
 document.addEventListener('DOMContentLoaded', () => {
-    const draggables = document.querySelectorAll('.draggable-sign');
-    const dropZones = document.querySelectorAll('.drop-zone');
-    const signsContainer = document.getElementById('signsContainer');
-    const submitBtn = document.getElementById('submitBtn');
-    let startTime = Date.now();
+    const questionsDataElement = document.getElementById('questionsData');
+    if (!questionsDataElement) return;
 
-    // Drag events
-    draggables.forEach(draggable => {
-        draggable.addEventListener('dragstart', () => {
-            draggable.classList.add('dragging');
-        });
+    const questionsData = JSON.parse(questionsDataElement.textContent);
+    let currentIndex = 0;
+    let correctCount = 0;
+    const answers = {};
+    const startTime = Date.now();
 
-        draggable.addEventListener('dragend', () => {
-            draggable.classList.remove('dragging');
-            checkCompletion();
-        });
-    });
+    function renderQuestion() {
+        if (!questionsData || questionsData.length === 0) return;
+        const q = questionsData[currentIndex];
+        const area = document.getElementById('questionArea');
+        document.getElementById('currentQ').textContent = currentIndex + 1;
+        document.getElementById('progressBar').style.width = 
+            ((currentIndex / totalQuestions) * 100) + '%';
 
-    // Dropzone events for map zones
-    dropZones.forEach(zone => {
-        zone.addEventListener('dragover', e => {
-            e.preventDefault();
-            zone.closest('.map-zone').classList.add('drag-over');
-        });
+        const isNotice = q.QuestionType === 'part1_notice';
+        const isDialogue = q.QuestionType === 'part3_dialogue';
 
-        zone.addEventListener('dragleave', () => {
-            zone.closest('.map-zone').classList.remove('drag-over');
-        });
-
-        zone.addEventListener('drop', e => {
-            e.preventDefault();
-            zone.closest('.map-zone').classList.remove('drag-over');
-            
-            const draggable = document.querySelector('.dragging');
-            if (draggable) {
-                // If zone already has a sign, move it back to container
-                const existingSign = zone.querySelector('.draggable-sign');
-                if (existingSign) {
-                    signsContainer.appendChild(existingSign);
-                }
-                
-                // Hide placeholder
-                const placeholder = zone.querySelector('.drop-placeholder');
-                if (placeholder) placeholder.style.display = 'none';
-                
-                zone.appendChild(draggable);
-                
-                // Mascota: feedback de colocación
-                if (typeof triggerMascota === 'function') {
-                    triggerMascota('exito', '¡Aviso colocado! 📍');
-                }
-            }
-        });
-    });
-
-    // Dropzone events for original container (to return signs)
-    signsContainer.addEventListener('dragover', e => {
-        e.preventDefault();
-    });
-
-    signsContainer.addEventListener('drop', e => {
-        e.preventDefault();
-        const draggable = document.querySelector('.dragging');
-        if (draggable) {
-            signsContainer.appendChild(draggable);
-        }
+        let html = '';
         
-        // Restore placeholders in empty map zones
-        dropZones.forEach(zone => {
-            if (!zone.querySelector('.draggable-sign')) {
-                const placeholder = zone.querySelector('.drop-placeholder');
-                if (placeholder) placeholder.style.display = 'block';
-            }
-        });
-    });
+        if (isNotice) {
+            html += `
+                <div class="notice-card">
+                    <div class="notice-icon">📋</div>
+                    <div class="notice-text">${q.QuestionText}</div>
+                </div>
+                <h3 class="question-prompt">Where can you see this notice?</h3>
+            `;
+        } else if (isDialogue) {
+            html += `
+                <div class="dialogue-card">
+                    <div class="speaker-bubble">
+                        <span class="speaker-label">Speaker A:</span>
+                        <p class="speaker-text">${q.QuestionText}</p>
+                    </div>
+                </div>
+                <h3 class="question-prompt">Choose the best response:</h3>
+            `;
+        } else {
+             // Fallback for generic pragmatics questions
+             html += `
+                <h3 class="question-prompt">${q.QuestionText}</h3>
+            `;
+        }
 
-    function checkCompletion() {
-        const placedSigns = document.querySelectorAll('.drop-zone .draggable-sign');
-        submitBtn.disabled = placedSigns.length < totalQuestions;
+        html += '<div class="options-list">';
+        const shuffledOpts = [...q.Options]; // Don't shuffle - order matters for A, B, C
+        shuffledOpts.forEach((opt, idx) => {
+            html += `
+                <button class="option-btn" data-option-id="${opt.OptionID}" data-correct="${opt.IsCorrect}">
+                    <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
+                    <span class="option-text">${opt.OptionText}</span>
+                </button>
+            `;
+        });
+        html += '</div>';
+        
+        // Add Explanation box (hidden by default)
+        html += `
+            <div class="explanation-box" id="explanationBox" style="display:none">
+                <div class="explanation-icon">💡</div>
+                <p class="explanation-text">${q.Explanation || 'Explanation will appear here.'}</p>
+            </div>
+        `;
+
+        area.innerHTML = html;
+
+        // Attach click handlers
+        area.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => handleAnswer(btn, q));
+        });
     }
 
-    submitBtn.addEventListener('click', async () => {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Validando...';
-        
-        const matches = {};
-        dropZones.forEach(zone => {
-            const questionId = zone.dataset.questionId;
-            const sign = zone.querySelector('.draggable-sign');
-            if (sign) {
-                matches[questionId] = sign.dataset.optionId;
+    function handleAnswer(btn, question) {
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(b => b.disabled = true);
+
+        const isCorrect = btn.dataset.correct === 'true';
+        if (isCorrect) {
+            btn.classList.add('correct');
+            correctCount++;
+            if (typeof triggerMascota === 'function') triggerMascota('exito', '¡Correcto! ✅');
+        } else {
+            btn.classList.add('wrong');
+            allBtns.forEach(b => {
+                if (b.dataset.correct === 'true') b.classList.add('correct');
+            });
+            if (typeof triggerMascota === 'function') triggerMascota('error', 'Incorrecto ❌');
+        }
+
+        answers[question.QuestionID] = parseInt(btn.dataset.optionId);
+
+        // Show explanation
+        const expBox = document.getElementById('explanationBox');
+        if (expBox && question.Explanation) {
+            expBox.style.display = 'flex'; // Changed to flex for icon and text alignment
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex >= totalQuestions) {
+                submitResults();
+            } else {
+                renderQuestion();
             }
-        });
+        }, 3000); // Wait 3 seconds so user can read explanation
+    }
 
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-
+    async function submitResults() {
+        const timeSpent = Math.round((Date.now() - startTime) / 1000);
+        
+        // Build the structure the server expects. Based on the previous code, 
+        // /game/pragmatics/submit expects matches instead of userAnswers. 
+        // We'll send what it needs, maybe adapting logic.
+        
         try {
-            const response = await fetch('/game/pragmatics/submit', {
+            const res = await fetch('/game/pragmatics/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ activityId, matches, timeSpent })
+                body: JSON.stringify({
+                    activityId,
+                    matches: answers,
+                    matchedPairs: correctCount, // Backwards compatibility if server expects this
+                    timeSpent
+                })
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-                showResults(result);
-            } else {
-                alert('Error al validar respuestas: ' + (result.error || 'Error desconocido'));
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Validar Ubicaciones';
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión.');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Validar Ubicaciones';
+            const data = await res.json();
+            
+            // Adjust to use data.passed, data.xpEarned, etc. based on response format
+            showGameResultModal({
+                passed: data.passed !== undefined ? data.passed : (data.success && data.passed),
+                title: data.passed ? '🎉 ¡Excelente Trabajo!' : '📚 ¡Sigue practicando!',
+                xp: data.xpEarned || 0,
+                coins: data.coinsEarned || 0,
+                score: data.score || Math.round((correctCount/totalQuestions)*100),
+                correct: data.correctCount !== undefined ? data.correctCount : correctCount,
+                total: data.totalQ || totalQuestions,
+                message: data.passed 
+                    ? (data.alreadyCompleted ? '¡Actividad completada previamente!' : '¡Has superado esta actividad!') 
+                    : 'Necesitas al menos 60% para aprobar.'
+            });
+        } catch (err) {
+            console.error('Submit error:', err);
+            alert('Error enviando los resultados.');
         }
-    });
-
-    function showResults(result) {
-        showGameResultModal({
-            passed: result.passed,
-            title: result.passed ? '¡Excelente Trabajo!' : 'Inténtalo de Nuevo',
-            xp: result.xpEarned,
-            coins: result.coinsEarned,
-            score: result.score,
-            correct: result.correctCount,
-            total: result.totalQ,
-            message: result.passed 
-                ? (result.alreadyCompleted 
-                    ? 'Actividad completada previamente, no otorga recompensas extra.' 
-                    : `Has ubicado correctamente ${result.correctCount} de ${result.totalQ} avisos.`)
-                : `Solo ${result.correctCount} de ${result.totalQ} correctas. Necesitas un 60% para aprobar.`
-        });
     }
+
+    if (totalQuestions > 0) renderQuestion();
 });
 
 function showGameResultModal(opts) {

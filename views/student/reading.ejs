@@ -1,49 +1,63 @@
 <%- include('../partials/header') %>
 
-<div class="reading-game-container">
-  <div class="assembly-header">
-    <h2>Lectura: Ensamblaje Lógico</h2>
-    <button class="btn btn-secondary hint-btn" id="hintBtn" style="display:none;">Pista</button>
-  </div>
-  
-  <div class="game-layout">
-    <div class="source-area">
-      <h3 class="area-title">Bloques Disponibles</h3>
-      <div id="blocksSource" class="blocks-source" style="display:flex; flex-direction:column; gap:0.5rem; min-height:100px; padding:1rem; background:rgba(0,0,0,0.2); border-radius:8px;">
-        <% (shuffledBlocks || []).forEach(block => { %>
-          <div class="text-block" data-block-id="<%= block.OptionID %>" data-correct-pos="<%= block.SortOrder %>" draggable="true" style="padding:0.75rem; background:var(--bg-card); border:1px solid rgba(255,255,255,0.1); border-radius:6px; cursor:grab;">
-            <span class="grip-icon" style="margin-right:0.5rem; color:var(--text-muted);">⠿</span>
-            <%= block.OptionText %>
-          </div>
-        <% }) %>
-      </div>
+<main class="game-container">
+    <div class="game-header">
+        <div class="activity-info">
+            <h1><%= activity.Title %></h1>
+            <p><%= activity.Description %></p>
+        </div>
+        <div class="stats-bar">
+            <div class="stat-badge xp-badge">
+                <span class="icon">⭐</span>
+                <span id="xpCounter"><%= studentStats.TotalXP %></span> XP
+            </div>
+            <div class="stat-badge coins-badge">
+                <span class="icon">🪙</span>
+                <span id="coinsCounter"><%= studentStats.TotalCoins || 0 %></span>
+            </div>
+            <div class="stat-badge level-badge">
+                <span class="icon">🏆</span> Nvl <span id="levelCounter"><%= studentStats.Level %></span>
+            </div>
+        </div>
     </div>
-    
-    <div class="assembly-area">
-      <h3 class="area-title">Área de Ensamblaje</h3>
-      <div class="assembly-belt" style="display:flex; flex-direction:column; gap:0.75rem; padding:1rem; background:rgba(0,0,0,0.3); border-radius:8px;">
-        <% for(let i = 1; i <= (shuffledBlocks ? shuffledBlocks.length : 0); i++) { %>
-          <div class="drop-zone" data-position="<%= i %>" style="min-height:50px; background:rgba(255,255,255,0.02); border:2px dashed rgba(255,255,255,0.1); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.9rem;">
-            Posición <%= i %>
-          </div>
-        <% } %>
-      </div>
-      <div class="game-controls" style="margin-top: 1rem; text-align: center;">
-        <button class="btn btn-primary" id="submitReading">Verificar Ensamblaje</button>
-      </div>
-    </div>
-    
-    <div class="preview-panel" style="margin-top:1.5rem; padding:1rem; background:rgba(6,182,212,0.05); border:1px solid rgba(6,182,212,0.2); border-radius:8px;">
-      <h3 class="area-title" style="margin-top:0;">Vista Previa del Párrafo</h3>
-      <div id="previewText" style="line-height:1.6; color:var(--text-secondary);">
-        Arrastra los bloques al área de ensamblaje para leer el texto completo.
-      </div>
-    </div>
-  </div>
-</div>
 
+    <div class="reading-layout">
+        <!-- Reading Passage Section -->
+        <div class="reading-content-area">
+            <% if (passageTitle) { %>
+                <h2 class="passage-title"><%= passageTitle %></h2>
+            <% } %>
+            <% if (passage) { %>
+                <div class="reading-passage" id="readingPassage">
+                    <%- passage.replace(/\n/g, '<br>') %>
+                </div>
+            <% } else { %>
+                <div class="reading-passage" id="readingPassage">
+                    <p>No passage provided.</p>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Question Section -->
+        <div class="question-interaction-area">
+            <div class="progress-indicator">
+                <span>Pregunta <span id="currentQ">1</span> de <span id="totalQ"><%= questions ? questions.length : 0 %></span></span>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="question-area" id="questionArea">
+                <!-- Rendered by JS -->
+            </div>
+        </div>
+    </div>
+</main>
+
+<script id="questionsData" type="application/json"><%- JSON.stringify(questions || []) %></script>
 <script>
-  const ACTIVITY_ID = "<%= activity.ActivityID %>";
+    const activityId = <%= activity.ActivityID %>;
+    const totalQuestions = <%= questions ? questions.length : 0 %>;
 </script>
 
 <%- include('../partials/footer') %>

@@ -21,9 +21,9 @@
 
   <div class="play-area">
     <div class="columns-container">
-      <!-- Spanish Column -->
+      <!-- Definitions Column -->
       <div class="word-column" id="spanishWords">
-        <h3 class="column-title">Español</h3>
+        <h3 class="column-title">Definiciones</h3>
         <% questions.forEach(q => { %>
           <div class="word-chip" data-pair-id="<%= q.QuestionID %>" data-side="spanish" id="sp-<%= q.QuestionID %>">
             <%= q.QuestionText %>
@@ -31,9 +31,9 @@
         <% }) %>
       </div>
 
-      <!-- English Column (shuffled) -->
+      <!-- Words Column (shuffled) -->
       <div class="word-column" id="englishWords">
-        <h3 class="column-title">Inglés</h3>
+        <h3 class="column-title">Palabras</h3>
         <% shuffledOptions.forEach(opt => { %>
           <div class="word-chip" data-pair-id="<%= opt.questionId %>" data-side="english" id="en-<%= opt.OptionID %>">
             <%= opt.OptionText %>

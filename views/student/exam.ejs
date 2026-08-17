@@ -1,0 +1,118 @@
+<%- include('../partials/header') %>
+
+<div class="exam-layout">
+    <div class="exam-sidebar">
+        <div class="timer-card">
+            <h3>Tiempo Restante</h3>
+            <div id="exam-timer" class="timer-display">45:00</div>
+        </div>
+        <div class="progress-card">
+            <h3>Progreso</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="exam-progress"></div>
+            </div>
+            <p id="progress-text">0 / <%= totalQuestions %> Respondidas</p>
+        </div>
+        <button id="submitExamBtn" class="btn-primary w-100" disabled>Finalizar Examen</button>
+    </div>
+
+    <div class="exam-content">
+        <div class="exam-header">
+            <h1><%= title %></h1>
+            <p>Lee cuidadosamente cada pregunta y selecciona la opción correcta. Tienes 45 minutos para completar la prueba.</p>
+        </div>
+
+        <form id="examForm">
+            <!-- Sección 1: Preguntas Individuales (Pragmática y Vocabulario) -->
+            <% if (singleQuestions && singleQuestions.length > 0) { %>
+                <h3 class="section-title">Parte 1: Vocabulario y Pragmática</h3>
+                <% singleQuestions.forEach((q, index) => { %>
+                    <div class="question-card" id="q-card-<%= q.QuestionID %>" data-qid="<%= q.QuestionID %>">
+                        <div class="question-number">Pregunta <%= index + 1 %></div>
+                        
+                        <div class="question-text">
+                            <%- (q.QuestionText || '').replace(/\n/g, '<br>') %>
+                        </div>
+                        
+                        <div class="options-container">
+                            <% q.Options.forEach(opt => { %>
+                                <label class="option-label">
+                                    <input type="radio" name="q_<%= q.QuestionID %>" value="<%= opt.OptionID %>">
+                                    <span class="option-text"><%= opt.OptionText %></span>
+                                </label>
+                            <% }) %>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+
+            <!-- Sección 2: Comprensión de Lectura -->
+            <% if (readingData && readingData.questions && readingData.questions.length > 0) { %>
+                <h3 class="section-title">Parte 2: Comprensión de Lectura</h3>
+                <div class="reading-passage">
+                    <% if (readingData.title) { %><h4><%= readingData.title %></h4><% } %>
+                    <p><%- (readingData.passage || '').replace(/\n/g, '<br>') %></p>
+                </div>
+                
+                <% readingData.questions.forEach((q, index) => { %>
+                    <div class="question-card" id="q-card-<%= q.QuestionID %>" data-qid="<%= q.QuestionID %>">
+                        <div class="question-number">Pregunta Lectura - <%= index + 1 %></div>
+                        <div class="question-text">
+                            <%- (q.QuestionText || '').replace(/\n/g, '<br>') %>
+                        </div>
+                        <div class="options-container">
+                            <% q.Options.forEach(opt => { %>
+                                <label class="option-label">
+                                    <input type="radio" name="q_<%= q.QuestionID %>" value="<%= opt.OptionID %>">
+                                    <span class="option-text"><%= opt.OptionText %></span>
+                                </label>
+                            <% }) %>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+
+            <!-- Sección 3: Gramática (Cloze) -->
+            <% if (clozeData && clozeData.questions && clozeData.questions.length > 0) { %>
+                <h3 class="section-title">Parte 3: Gramática</h3>
+                <div class="cloze-passage-content" style="font-size: 1.2rem; line-height: 2; padding: 2rem; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); color: var(--text-primary); margin-bottom: 2rem;">
+                    <% if (clozeData.title) { %><h4 style="color: var(--accent-blue); text-align:center;"><%= clozeData.title %></h4><% } %>
+                    
+                    <% 
+                        let formattedPassage = (clozeData.passage || '').replace(/\n/g, '<br>');
+                        let qIndex = 0;
+                        formattedPassage = formattedPassage.replace(/\(\d+\)\s*_*/g, (match) => {
+                            const q = clozeData.questions[qIndex];
+                            if (!q) return match;
+                            
+                            let selectHtml = `<select class="cloze-inline-select" name="q_${q.QuestionID}" data-qid="${q.QuestionID}" style="margin: 0 5px; padding: 5px; border-radius: 5px; border: 1px solid var(--accent-blue); background: var(--bg-surface); color: white;">`;
+                            selectHtml += `<option value="" disabled selected>---</option>`;
+                            q.Options.forEach(opt => {
+                                selectHtml += `<option value="${opt.OptionID}">${opt.OptionText}</option>`;
+                            });
+                            selectHtml += `</select>`;
+                            
+                            qIndex++;
+                            return selectHtml;
+                        });
+                    %>
+                    <%- formattedPassage %>
+                </div>
+            <% } %>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal-overlay" id="resultModal">
+    <div class="modal-content text-center">
+        <h2>Prueba Finalizada</h2>
+        <div class="score-display">
+            <span id="finalScore" class="score-number">0%</span>
+        </div>
+        <p>Tus resultados se usarán para personalizar tu plan de estudio y calcular tu desempeño proyectado.</p>
+        <button class="btn-primary" onclick="window.location.href='/student'">Continuar al Mapa</button>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

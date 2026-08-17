@@ -10,5 +10,6 @@ router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 router.get('/kpis/data', adminController.getKPIData);
 router.get('/profile', adminController.showProfile);
+router.get('/students/:id/detail', adminController.showStudentDetail);
 
 module.exports = router;

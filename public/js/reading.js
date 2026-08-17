@@ -1,153 +1,126 @@
+/* public/js/reading.js */
 document.addEventListener('DOMContentLoaded', () => {
-    const blocks = document.querySelectorAll('.text-block');
-    const dropZones = document.querySelectorAll('.drop-zone');
-    const sourceArea = document.getElementById('blocksSource');
-    const previewText = document.getElementById('previewText');
-    const submitBtn = document.getElementById('submitReading');
-    
-    let draggedBlock = null;
-    let startTime = Date.now();
-    
-    blocks.forEach(block => {
-        block.addEventListener('dragstart', function(e) {
-            draggedBlock = this;
-            setTimeout(() => this.style.opacity = '0.5', 0);
-        });
+    const questionsDataElement = document.getElementById('questionsData');
+    if (!questionsDataElement) return;
+
+    const questionsData = JSON.parse(questionsDataElement.textContent);
+    let currentIndex = 0;
+    let correctCount = 0;
+    const answers = {};
+    const startTime = Date.now();
+
+    function renderQuestion() {
+        if (!questionsData || questionsData.length === 0) return;
+        const q = questionsData[currentIndex];
+        const area = document.getElementById('questionArea');
+        document.getElementById('currentQ').textContent = currentIndex + 1;
+        document.getElementById('progressBar').style.width = 
+            ((currentIndex / totalQuestions) * 100) + '%';
+
+        let html = '';
         
-        block.addEventListener('dragend', function() {
-            setTimeout(() => {
-                this.style.opacity = '1';
-                draggedBlock = null;
-                updatePreview();
-            }, 0);
+        html += `
+            <h3 class="question-prompt">${q.QuestionText}</h3>
+        `;
+
+        html += '<div class="options-list">';
+        const shuffledOpts = [...q.Options]; // Don't shuffle
+        shuffledOpts.forEach((opt, idx) => {
+            html += `
+                <button class="option-btn" data-option-id="${opt.OptionID}" data-correct="${opt.IsCorrect}">
+                    <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
+                    <span class="option-text">${opt.OptionText}</span>
+                </button>
+            `;
         });
-    });
-    
-    dropZones.forEach(zone => {
-        zone.addEventListener('dragover', e => {
-            e.preventDefault();
-            zone.classList.add('drag-over');
-        });
+        html += '</div>';
         
-        zone.addEventListener('dragleave', e => {
-            zone.classList.remove('drag-over');
-        });
-        
-        zone.addEventListener('drop', e => {
-            e.preventDefault();
-            zone.classList.remove('drag-over');
-            if (draggedBlock) {
-                // If zone already has a block, swap them
-                if (zone.children.length > 0) {
-                    const existingBlock = zone.children[0];
-                    if (draggedBlock.parentElement.classList.contains('drop-zone')) {
-                        draggedBlock.parentElement.appendChild(existingBlock);
-                    } else {
-                        sourceArea.appendChild(existingBlock);
-                    }
-                }
-                zone.appendChild(draggedBlock);
-            }
-        });
-    });
-    
-    if (sourceArea) {
-        sourceArea.addEventListener('dragover', e => e.preventDefault());
-        sourceArea.addEventListener('drop', e => {
-            e.preventDefault();
-            if (draggedBlock) {
-                sourceArea.appendChild(draggedBlock);
-            }
+        // Add Explanation box (hidden by default)
+        html += `
+            <div class="explanation-box" id="explanationBox" style="display:none">
+                <div class="explanation-icon">💡</div>
+                <p class="explanation-text">${q.Explanation || 'Explanation will appear here.'}</p>
+            </div>
+        `;
+
+        area.innerHTML = html;
+
+        // Attach click handlers
+        area.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => handleAnswer(btn, q));
         });
     }
-    
-    function updatePreview() {
-        const parts = [];
-        dropZones.forEach(zone => {
-            if (zone.children.length > 0) {
-                parts.push(zone.children[0].textContent.trim());
-            } else {
-                parts.push('_____');
-            }
-        });
-        previewText.textContent = parts.join(' ');
-    }
-    
-    submitBtn.addEventListener('click', async () => {
-        const arrangement = [];
-        let placedCount = 0;
-        
-        dropZones.forEach(zone => {
-            if (zone.children.length > 0) {
-                placedCount++;
-                arrangement.push(zone.children[0].dataset.blockId);
-            }
-        });
-        
-        if (placedCount < dropZones.length) {
-            if (typeof triggerMascota === 'function') {
-                triggerMascota('error', '¡Faltan bloques por colocar! 📝');
-            }
-            return;
+
+    function handleAnswer(btn, question) {
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(b => b.disabled = true);
+
+        const isCorrect = btn.dataset.correct === 'true';
+        if (isCorrect) {
+            btn.classList.add('correct');
+            correctCount++;
+            if (typeof triggerMascota === 'function') triggerMascota('exito', '¡Correcto! ✅');
+        } else {
+            btn.classList.add('wrong');
+            allBtns.forEach(b => {
+                if (b.dataset.correct === 'true') b.classList.add('correct');
+            });
+            if (typeof triggerMascota === 'function') triggerMascota('error', 'Incorrecto ❌');
         }
-        
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
+        answers[question.QuestionID] = parseInt(btn.dataset.optionId);
+
+        // Show explanation
+        const expBox = document.getElementById('explanationBox');
+        if (expBox && question.Explanation) {
+            expBox.style.display = 'flex';
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex >= totalQuestions) {
+                submitResults();
+            } else {
+                renderQuestion();
+            }
+        }, 3000); // Wait 3 seconds
+    }
+
+    async function submitResults() {
+        const timeSpent = Math.round((Date.now() - startTime) / 1000);
         
         try {
-            const res = await fetch('/game/reading/submit', {
+            const res = await fetch('/game/reading/submit', { // Adjust if endpoint name differs
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    activityId: ACTIVITY_ID,
-                    arrangement: arrangement,
+                    activityId,
+                    answers: answers, // Adjust depending on what backend expects, it might expect arrangement or answers
+                    correctCount: correctCount,
                     timeSpent: timeSpent
                 })
             });
             const data = await res.json();
-            if (data.success || res.ok) {
-                if (data.passed) {
-                    showGameResultModal({
-                        passed: true,
-                        title: '¡Lectura Ensamblada!',
-                        xp: data.xpEarned || 0,
-                        coins: data.coinsEarned || 0,
-                        score: data.score,
-                        correct: data.correctCount,
-                        total: data.totalBlocks,
-                        message: data.alreadyCompleted 
-                            ? 'Ya habías completado esta actividad. No se otorgan recompensas extra.'
-                            : '¡Excelente comprensión lectora!'
-                    });
-                } else {
-                    showGameResultModal({
-                        passed: false,
-                        title: 'Inténtalo de Nuevo',
-                        xp: 0,
-                        coins: 0,
-                        score: data.score,
-                        correct: data.correctCount,
-                        total: data.totalBlocks,
-                        message: `Necesitas al menos el 60% para aprobar. ¡Reorganiza los bloques!`
-                    });
-                    
-                    // Highlight incorrect blocks
-                    dropZones.forEach(zone => {
-                        if (zone.children.length > 0) {
-                            const block = zone.children[0];
-                            const correctPos = parseInt(block.dataset.correctPos, 10);
-                            const pos = parseInt(zone.dataset.position, 10);
-                            if (pos !== correctPos) {
-                                block.classList.add('error');
-                                setTimeout(() => block.classList.remove('error'), 1500);
-                            }
-                        }
-                    });
-                }
-            }
+            
+            showGameResultModal({
+                passed: data.passed !== undefined ? data.passed : (data.success && data.passed),
+                title: data.passed ? '🎉 ¡Excelente Trabajo!' : '📚 ¡Sigue practicando!',
+                xp: data.xpEarned || 0,
+                coins: data.coinsEarned || 0,
+                score: data.score || Math.round((correctCount/totalQuestions)*100),
+                correct: data.correctCount !== undefined ? data.correctCount : correctCount,
+                total: data.totalQuestions || totalQuestions,
+                message: data.passed 
+                    ? (data.alreadyCompleted ? '¡Actividad completada previamente!' : '¡Has superado esta actividad!') 
+                    : 'Necesitas al menos 60% para aprobar.'
+            });
         } catch (err) {
-            console.error('Error submitting reading:', err);
+            console.error('Submit error:', err);
+            alert('Error enviando los resultados.');
         }
-    });
+    }
+
+    if (totalQuestions > 0) renderQuestion();
 });
 
 /**

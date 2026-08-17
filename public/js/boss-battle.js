@@ -102,6 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     optionId: optionId
                 })
             });
+            
+            if (!res.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            
             const data = await res.json();
             
             if (data.isCorrect) {
@@ -121,9 +126,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     triggerMascota('error', '¡Te han golpeado! 😵');
                 }
             }
+            const explanationBox = document.getElementById('explanationBox');
+            const explanationText = document.getElementById('explanationText');
+            if (q.Explanation) {
+                explanationText.textContent = q.Explanation;
+                explanationBox.style.display = 'block';
+            }
             
             setTimeout(() => {
                 if (battleEnded) return;
+                if (explanationBox) explanationBox.style.display = 'none';
                 
                 if (playerHpValue <= 0 || currentQuestionIndex >= TOTAL_QUESTIONS - 1) {
                     finishBattle();
@@ -131,10 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentQuestionIndex++;
                     loadQuestion();
                 }
-            }, 1000);
+            }, 3000);
             
         } catch (err) {
             console.error('Error submitting answer:', err);
+            alert('Error de conexión al enviar tu respuesta. Por favor, revisa tu internet y vuelve a intentar.');
             enableButtons();
         }
     }
@@ -147,13 +160,21 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHpBars();
         showAvatarAction('boss');
         
-        // Mascota: error por timeout
         if (typeof triggerMascota === 'function') {
             triggerMascota('error', '¡Se acabó el tiempo! ⏰');
         }
         
+        const q = questionsData[currentQuestionIndex];
+        const explanationBox = document.getElementById('explanationBox');
+        const explanationText = document.getElementById('explanationText');
+        if (q && q.Explanation) {
+            explanationText.textContent = q.Explanation;
+            explanationBox.style.display = 'block';
+        }
+        
         setTimeout(() => {
             if (battleEnded) return;
+            if (explanationBox) explanationBox.style.display = 'none';
             
             if (playerHpValue <= 0 || currentQuestionIndex >= TOTAL_QUESTIONS - 1) {
                 finishBattle();
@@ -161,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentQuestionIndex++;
                 loadQuestion();
             }
-        }, 1000);
+        }, 3000);
     }
     
     function updateHpBars() {

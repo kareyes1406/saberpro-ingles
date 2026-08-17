@@ -48,6 +48,17 @@
         </div>
       <% }); %>
     </div>
+    
+    <!-- Post-Test Final Exam Section -->
+    <div style="margin-top: 4rem; padding: 2rem; background: rgba(255,255,255,0.02); border: 2px dashed var(--accent-purple); border-radius: 16px; text-align: center;">
+      <h3 style="color: var(--accent-gold); margin-top: 0;">🎓 Examen Final (Post-Test)</h3>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Demuestra todo lo que has aprendido. Este examen evalúa tu progreso final tras completar las 12 semanas.</p>
+      <% if (allWeeksCompleted) { %>
+        <button class="btn-primary" onclick="alert('Funcionalidad de Examen Final en desarrollo')" style="font-size: 1.1rem; padding: 0.75rem 2rem;">🏆 Presentar Post-Test</button>
+      <% } else { %>
+        <button class="btn-primary" disabled style="opacity: 0.5; cursor: not-allowed; font-size: 1.1rem; padding: 0.75rem 2rem;">🔒 Bloqueado (Completa la Semana 12)</button>
+      <% } %>
+    </div>
   </div>
   
   <!-- Stats Sidebar -->
