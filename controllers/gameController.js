@@ -309,19 +309,55 @@ exports.showPragmatics = async (req, res) => {
         
         // Guardar respuestas correctas en sesión
         const correctAnswers = {};
+        
+        // Recolectar opciones incorrectas de todas las preguntas para usar como distractores extra
+        const allWrongOptions = [];
+        questions.forEach(q => {
+            q.Options.forEach(o => {
+                if (!o.IsCorrect) allWrongOptions.push(o.OptionText);
+            });
+        });
+        
         const clientQuestions = questions.map(q => {
             const correctOpt = q.Options.find(o => o.IsCorrect);
             if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+            
+            // Crear copia de opciones con la info necesaria
+            let opts = q.Options.map(o => ({
+                OptionID: o.OptionID,
+                OptionText: o.OptionText,
+                IsCorrect: o.IsCorrect
+            }));
+            
+            // Agregar una 4ta opción distractora si solo hay 3
+            if (opts.length < 4) {
+                // Buscar un distractor que no se repita con las opciones existentes
+                const existingTexts = opts.map(o => o.OptionText.toLowerCase());
+                const availableDistractors = allWrongOptions.filter(t => 
+                    !existingTexts.includes(t.toLowerCase())
+                );
+                if (availableDistractors.length > 0) {
+                    const randomDistractor = availableDistractors[Math.floor(Math.random() * availableDistractors.length)];
+                    opts.push({
+                        OptionID: -1 * q.QuestionID, // ID negativo para identificarlo como distractor extra
+                        OptionText: randomDistractor,
+                        IsCorrect: false
+                    });
+                }
+            }
+            
+            // Mezclar (shuffle) las opciones para que la correcta no siempre sea la A
+            for (let i = opts.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [opts[i], opts[j]] = [opts[j], opts[i]];
+            }
+            
             return {
                 QuestionID: q.QuestionID,
                 QuestionText: q.QuestionText,
                 QuestionType: q.QuestionType,
                 Explanation: q.Explanation,
-                Options: q.Options.map(o => ({
-                    OptionID: o.OptionID,
-                    OptionText: o.OptionText,
-                    IsCorrect: o.IsCorrect
-                }))
+                Options: opts
             };
         });
         

@@ -276,6 +276,65 @@
             .promo-panel { display: none; }
             .form-panel { width: 100%; }
         }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: #1f2937;
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .pin-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+        .pin-input {
+            width: 45px;
+            height: 55px;
+            font-size: 24px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            transition: all 0.2s;
+        }
+        .pin-input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        /* Honeypot */
+        .oh-no-you-dont {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -326,7 +385,10 @@
             <% }); %>
         <% } %>
 
-        <form action="/auth/register" method="POST">
+        <form id="registerForm">
+            <!-- Honeypot -->
+            <input type="text" name="website" class="oh-no-you-dont" tabindex="-1" autocomplete="off">
+            
             <div style="display: flex; gap: 1rem;">
                 <div class="form-group" style="flex: 1;">
                     <label class="form-label" for="firstName">Nombre</label>
@@ -370,7 +432,7 @@
             </div>
 
             <div id="clientError" class="flash-error" style="display: none; margin-top: 1rem;"></div>
-            <button type="submit" class="btn-submit">Registrarme</button>
+            <button type="submit" class="btn-submit" id="submitBtn">Registrarme</button>
         </form>
 
         <div class="auth-links">
@@ -380,40 +442,150 @@
 
 </div>
 
+<!-- Modal Ingreso PIN -->
+<div class="modal-overlay" id="pinModal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; color: #fff;">Verifica tu correo</h2>
+        <p style="color: #9ca3af; font-size: 0.9rem;">Hemos enviado un código de 6 dígitos a tu correo. Ingrésalo para activar tu cuenta.</p>
+        
+        <div class="pin-inputs" id="pinInputs">
+            <input type="text" maxlength="1" class="pin-input" inputmode="numeric">
+            <input type="text" maxlength="1" class="pin-input" inputmode="numeric">
+            <input type="text" maxlength="1" class="pin-input" inputmode="numeric">
+            <input type="text" maxlength="1" class="pin-input" inputmode="numeric">
+            <input type="text" maxlength="1" class="pin-input" inputmode="numeric">
+            <input type="text" maxlength="1" class="pin-input" inputmode="numeric">
+        </div>
+        
+        <div id="pinError" class="flash-error" style="display: none; padding: 0.5rem;"></div>
+        <button id="verifyPinBtn" class="btn-submit">Verificar Cuenta</button>
+    </div>
+</div>
+
+<!-- Modal Éxito -->
+<div class="modal-overlay" id="successModal">
+    <div class="modal-content">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+        <h2 style="margin-top:0; color: #10b981;">¡Registro Exitoso!</h2>
+        <p style="color: #d1d5db; margin-bottom: 2rem;">Tu cuenta ha sido creada y verificada correctamente. ¡Prepárate para aprender!</p>
+        <a href="/auth/login" class="btn-submit" style="display: inline-block; text-decoration: none;">Ir a Iniciar Sesión</a>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const form = document.querySelector('form');
+        const form = document.getElementById('registerForm');
         const errorDiv = document.getElementById('clientError');
+        const submitBtn = document.getElementById('submitBtn');
+        let registeredEmail = '';
 
-        form.addEventListener('submit', (e) => {
+        // Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Honeypot check
+            if (form.querySelector('input[name="website"]').value !== '') {
+                return; // Bot detected, silent fail
+            }
+
             const pwd = document.getElementById('password').value;
             const confirm = document.getElementById('confirmPassword').value;
 
             if (pwd !== confirm) {
-                e.preventDefault();
-                errorDiv.textContent = '⚠️ Las contraseñas no coinciden.';
-                errorDiv.style.display = 'block';
-                return;
+                return showError('Las contraseñas no coinciden.');
             }
-            if (pwd.length < 8) {
-                e.preventDefault();
-                errorDiv.textContent = '⚠️ La contraseña debe tener al menos 8 caracteres.';
-                errorDiv.style.display = 'block';
-                return;
+            if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+                return showError('La contraseña no cumple con los requisitos de seguridad.');
             }
-            if (!/[A-Z]/.test(pwd)) {
-                e.preventDefault();
-                errorDiv.textContent = '⚠️ La contraseña debe contener al menos una letra mayúscula.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
-                e.preventDefault();
-                errorDiv.textContent = '⚠️ La contraseña debe contener al menos un carácter especial.';
-                errorDiv.style.display = 'block';
-                return;
-            }
+            
             errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Procesando...';
+            
+            try {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.requiresPin) {
+                    registeredEmail = result.email;
+                    document.getElementById('pinModal').classList.add('active');
+                } else {
+                    showError(result.error || 'Error desconocido.');
+                }
+            } catch (error) {
+                showError('Error de conexión.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Registrarme';
+            }
+        });
+
+        function showError(msg) {
+            errorDiv.textContent = '⚠️ ' + msg;
+            errorDiv.style.display = 'block';
+        }
+
+        // PIN Inputs Logic
+        const pinInputs = document.querySelectorAll('.pin-input');
+        pinInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value && index < pinInputs.length - 1) {
+                    pinInputs[index + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    pinInputs[index - 1].focus();
+                }
+            });
+        });
+
+        // Verify PIN
+        const verifyBtn = document.getElementById('verifyPinBtn');
+        const pinError = document.getElementById('pinError');
+        
+        verifyBtn.addEventListener('click', async () => {
+            const pin = Array.from(pinInputs).map(i => i.value).join('');
+            if (pin.length !== 6) {
+                pinError.textContent = 'Ingresa los 6 dígitos';
+                pinError.style.display = 'block';
+                return;
+            }
+            
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verificando...';
+            
+            try {
+                const response = await fetch('/auth/verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: registeredEmail, pin })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('pinModal').classList.remove('active');
+                    document.getElementById('successModal').classList.add('active');
+                } else {
+                    pinError.textContent = result.error || 'PIN incorrecto';
+                    pinError.style.display = 'block';
+                }
+            } catch (error) {
+                pinError.textContent = 'Error de conexión';
+                pinError.style.display = 'block';
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verificar Cuenta';
+            }
         });
 
         const toggleBtns = document.querySelectorAll('.toggle-password');

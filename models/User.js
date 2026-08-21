@@ -34,20 +34,51 @@ class User {
      * @param {Object} userData
      */
     static async create(userData) {
+        const isActive = userData.IsActive !== undefined ? userData.IsActive : 1;
         const query = `
             INSERT INTO Users (FirstName, LastName, Email, PasswordHash, RoleID, IsActive, CreatedAt, UpdatedAt)
             OUTPUT INSERTED.UserID
-            VALUES (@FirstName, @LastName, @Email, @PasswordHash, @RoleID, 1, GETDATE(), GETDATE())
+            VALUES (@FirstName, @LastName, @Email, @PasswordHash, @RoleID, @IsActive, GETDATE(), GETDATE())
         `;
         const params = [
             { name: 'FirstName', type: sql.NVarChar, value: userData.FirstName },
             { name: 'LastName', type: sql.NVarChar, value: userData.LastName },
             { name: 'Email', type: sql.NVarChar, value: userData.Email },
             { name: 'PasswordHash', type: sql.NVarChar, value: userData.PasswordHash },
-            { name: 'RoleID', type: sql.Int, value: userData.RoleID }
+            { name: 'RoleID', type: sql.Int, value: userData.RoleID },
+            { name: 'IsActive', type: sql.Bit, value: isActive }
         ];
         const result = await executeQuery(query, params);
         return result.recordset[0];
+    }
+
+    /**
+     * Guarda el PIN de verificación para un usuario
+     */
+    static async saveVerificationPin(userId, pin) {
+        const query = `
+            UPDATE Users 
+            SET VerificationPin = @Pin, PinExpiry = DATEADD(minute, 15, GETDATE()) 
+            WHERE UserID = @UserID
+        `;
+        const params = [
+            { name: 'Pin', type: sql.VarChar, value: pin },
+            { name: 'UserID', type: sql.Int, value: userId }
+        ];
+        await executeQuery(query, params);
+    }
+
+    /**
+     * Activa a un usuario verificado y limpia su PIN
+     */
+    static async activateUser(userId) {
+        const query = `
+            UPDATE Users 
+            SET IsActive = 1, VerificationPin = NULL, PinExpiry = NULL 
+            WHERE UserID = @UserID
+        `;
+        const params = [{ name: 'UserID', type: sql.Int, value: userId }];
+        await executeQuery(query, params);
     }
 
     /**

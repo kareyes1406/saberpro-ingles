@@ -69,7 +69,14 @@ async function executeQuery(query, params = []) {
             }
         });
         
+        const startTime = Date.now();
         const result = await request.query(query);
+        const duration = Date.now() - startTime;
+
+        if (duration > 500) {
+            console.warn(`[DB WARNING] Consulta lenta detectada (${duration}ms):`, query.substring(0, 100) + '...');
+        }
+
         return result;
     } catch (err) {
         console.error('SQL Execution Error:', err, query);

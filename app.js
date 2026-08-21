@@ -36,7 +36,17 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // ── Middleware de Seguridad ──────────────────────────────────────────
-// Helmet con CSP relajada para Google Fonts, Chart.js CDN e inline styles
+// Redirigir a HTTPS en producción
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (req.headers['x-forwarded-proto'] !== 'https') {
+            return res.redirect(`https://${req.headers.host}${req.url}`);
+        }
+        next();
+    });
+}
+
+// Helmet con CSP relajada, HSTS y mitigaciones adicionales
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -49,8 +59,23 @@ app.use(helmet({
             connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
         }
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    },
+    frameguard: { action: 'deny' }, // X-Frame-Options
+    hidePoweredBy: true
 }));
+
+// Restringir subida de archivos (bloquear multipart/form-data ya que no se usa)
+app.use((req, res, next) => {
+    if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+        return res.status(415).send('Unsupported Media Type');
+    }
+    next();
+});
 
 // ── Middleware General ───────────────────────────────────────────────
 app.use(morgan('dev'));
@@ -66,8 +91,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'saberpro_session_secret_dev',
     resave: false,
     saveUninitialized: false,
+    name: 'sessionId', // No usar el default connect.sid
     cookie: {
         secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'strict',
         maxAge: 24 * 60 * 60 * 1000 // 24 horas
     }
 }));

@@ -96,22 +96,27 @@
       <button onclick="exportDashboardPDF()" class="btn-secondary" style="background:#ef4444; color:white; border:none;">📄 PDF Informe</button>
     </div>
   </div>
-  <table id="usersTable">
-    <thead>
-      <tr>
-        <th>ID</th><th>Nombre</th><th>Email</th><th>XP</th>
-        <th>Semana</th><th>Racha</th><th>Estado</th><th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% users.forEach(user => { %>
-        <tr data-user-id="<%= user.UserID %>">
-          <td><%= user.UserID %></td>
-          <td><%= user.FirstName %> <%= user.LastName %></td>
-          <td><%= user.Email %></td>
-          <td><%= user.TotalXP %> XP</td>
-          <td>Sem. <%= user.CurrentWeek || 1 %></td>
-          <td>🔥 <%= user.CurrentStreak %></td>
+  <div style="overflow-x: auto;">
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>ID</th><th>Nombre</th><th>Email</th><th>XP</th>
+          <th>Sem. / Actividad</th><th>Racha</th><th>Estado</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(user => { %>
+          <tr data-user-id="<%= user.UserID %>">
+            <td><%= user.UserID %></td>
+            <td><%= user.FirstName %> <%= user.LastName %></td>
+            <td><%= user.Email %></td>
+            <td><%= user.TotalXP %> XP</td>
+            <td>
+                Sem. <%= user.CurrentWeek || 1 %> 
+                <br>
+                <small style="color: var(--text-secondary);"><%= user.CurrentActivity || 'Sin actividad' %></small>
+            </td>
+            <td>🔥 <%= user.CurrentStreak %></td>
           <td>
             <span class="badge-pill <%= user.IsActive ? 'active' : 'inactive' %>">
               <%= user.IsActive ? 'Activo' : 'Inactivo' %>
@@ -140,6 +145,7 @@
       <% }); %>
     </tbody>
   </table>
+  </div>
 </div>
 </div> <!-- End pdf-content -->
 

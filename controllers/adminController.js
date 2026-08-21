@@ -55,7 +55,11 @@ exports.showDashboard = async (req, res) => {
                    (SELECT MAX(MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
                     INNER JOIN ModuleWeeks MW ON A2.WeekID = MW.WeekID
-                    WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1) as CurrentWeek
+                    WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1) as CurrentWeek,
+                   (SELECT TOP 1 A3.Title FROM UserProgress UP3 
+                    INNER JOIN Activities A3 ON UP3.ActivityID = A3.ActivityID 
+                    WHERE UP3.UserID = U.UserID AND UP3.IsCompleted = 1 
+                    ORDER BY UP3.CompletedAt DESC) as CurrentActivity
             FROM Users U
             INNER JOIN Roles R ON U.RoleID = R.RoleID
             LEFT JOIN UserGamification UG ON U.UserID = UG.UserID

@@ -34,7 +34,11 @@ exports.processLogin = async (req, res) => {
         
         // Check if user is active
         if (!user.IsActive) {
-            req.flash('error', 'Tu cuenta ha sido desactivada. Contacta al administrador.');
+            if (user.VerificationPin) {
+                req.flash('error', 'Tu cuenta no está verificada. Revisa tu correo y actívala.');
+            } else {
+                req.flash('error', 'Tu cuenta ha sido desactivada. Contacta al administrador.');
+            }
             return res.redirect('/auth/login');
         }
         
@@ -87,74 +91,104 @@ exports.showRegister = (req, res) => {
     });
 };
 
+const emailService = require('../services/emailService');
+
 exports.processRegister = async (req, res) => {
-    console.log("=== DATOS DEL FORMULARIO RECIBIDOS ===", req.body);
     try {
         const { firstName, lastName, email, password, confirmPassword } = req.body;
         
-        // Validate all fields
+        // Return JSON helper
+        const returnError = (msg) => res.status(400).json({ success: false, error: msg });
+
         if (!firstName || !lastName || !email || !password || !confirmPassword) {
-            req.flash('error', 'Todos los campos son obligatorios');
-            return res.redirect('/auth/register');
+            return returnError('Todos los campos son obligatorios');
         }
         
         if (password !== confirmPassword) {
-            req.flash('error', 'Las contraseñas no coinciden');
-            return res.redirect('/auth/register');
+            return returnError('Las contraseñas no coinciden');
         }
         
-        if (password.length < 8) {
-            req.flash('error', 'La contraseña debe tener al menos 8 caracteres');
-            return res.redirect('/auth/register');
-        }
-
-        if (!/[A-Z]/.test(password)) {
-            req.flash('error', 'La contraseña debe contener al menos una letra mayúscula');
-            return res.redirect('/auth/register');
-        }
-
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-            req.flash('error', 'La contraseña debe contener al menos un carácter especial');
-            return res.redirect('/auth/register');
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            return returnError('La contraseña no cumple con los requisitos de seguridad');
         }
         
-        // Check if email already exists
         const existingUser = await User.findByEmail(email);
         if (existingUser) {
-            req.flash('error', 'Ya existe una cuenta con ese email');
-            return res.redirect('/auth/register');
+            return returnError('Ya existe una cuenta con ese email');
         }
         
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12); // Aumentado a 12
         
-        // Find role student
         const roleResult = await executeQuery("SELECT RoleID FROM Roles WHERE RoleName = 'student'");
         const roleId = roleResult.recordset.length > 0 ? roleResult.recordset[0].RoleID : 1;
         
-        // Create user
+        // Crear usuario INACTIVO
         const newUser = await User.create({
             FirstName: firstName,
             LastName: lastName,
             Email: email,
             PasswordHash: hashedPassword,
-            RoleID: roleId
+            RoleID: roleId,
+            IsActive: 0
         });
         
-        // Initialize gamification row for new student
+        // Generar PIN de 6 dígitos
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        await User.saveVerificationPin(newUser.UserID, pin);
+        
+        // Enviar correo
+        await emailService.sendVerificationPin(email, pin);
+        
         await executeQuery(
             'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
             [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
         );
         
-        req.flash('success_msg', '¡Registro exitoso! Ahora puedes iniciar sesión.');
-        res.redirect('/auth/login');
+        res.json({ success: true, requiresPin: true, email: email });
         
     } catch (error) {
         console.error('Register Error:', error);
-        req.flash('error', 'Error al registrar. Intenta de nuevo.');
-        console.error("==== ERROR SQL AL REGISTRAR ====", error);
-        res.redirect('/auth/register');
+        res.status(500).json({ success: false, error: 'Error al registrar. Intenta de nuevo.' });
+    }
+};
+
+exports.verifyPin = async (req, res) => {
+    try {
+        const { email, pin } = req.body;
+        if (!email || !pin) {
+            return res.status(400).json({ success: false, error: 'Email y PIN requeridos' });
+        }
+
+        const user = await User.findByEmail(email);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        }
+
+        // Consultar PIN en BD
+        const result = await executeQuery(
+            'SELECT VerificationPin, PinExpiry FROM Users WHERE UserID = @UserID',
+            [{ name: 'UserID', type: sql.Int, value: user.UserID }]
+        );
+
+        const dbPin = result.recordset[0].VerificationPin;
+        const expiry = result.recordset[0].PinExpiry;
+
+        if (!dbPin || dbPin !== pin) {
+            return res.status(400).json({ success: false, error: 'PIN incorrecto' });
+        }
+
+        if (new Date() > new Date(expiry)) {
+            return res.status(400).json({ success: false, error: 'El PIN ha expirado' });
+        }
+
+        // Activar usuario
+        await User.activateUser(user.UserID);
+        
+        res.json({ success: true, message: 'Cuenta verificada correctamente' });
+
+    } catch (error) {
+        console.error('Verify PIN error:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 };
 

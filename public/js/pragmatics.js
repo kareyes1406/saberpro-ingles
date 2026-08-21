@@ -97,17 +97,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show explanation
         const expBox = document.getElementById('explanationBox');
         if (expBox && question.Explanation) {
-            expBox.style.display = 'flex'; // Changed to flex for icon and text alignment
+            expBox.style.display = 'flex';
         }
 
-        setTimeout(() => {
+        // Show "Siguiente" button instead of auto-advancing
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'next-question-btn';
+        nextBtn.innerHTML = currentIndex + 1 >= totalQuestions ? '📊 Ver Resultados' : '➡️ Siguiente Pregunta';
+        nextBtn.addEventListener('click', () => {
             currentIndex++;
             if (currentIndex >= totalQuestions) {
                 submitResults();
             } else {
                 renderQuestion();
             }
-        }, 3000); // Wait 3 seconds so user can read explanation
+        });
+
+        const area = document.getElementById('questionArea');
+        area.appendChild(nextBtn);
     }
 
     async function submitResults() {
