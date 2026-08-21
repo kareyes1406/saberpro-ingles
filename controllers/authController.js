@@ -132,11 +132,11 @@ exports.processRegister = async (req, res) => {
             IsActive: 0
         });
         
-        // Generar PIN de 6 dígitos
+        // Generar PIN aleatorio de 6 dígitos para el nuevo usuario
         const pin = Math.floor(100000 + Math.random() * 900000).toString();
         await User.saveVerificationPin(newUser.UserID, pin);
         
-        // Enviar correo
+        // Enviar correo electrónico al usuario que se está registrando
         await emailService.sendVerificationPin(email, pin);
         
         await executeQuery(
