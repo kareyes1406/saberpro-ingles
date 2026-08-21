@@ -175,18 +175,18 @@ class AIAssistantService {
         });
 
         // 9. BUILD THE REPORT TEXT
-        let reportText = `¡Hola! Soy tu asistente IA de aprendizaje. Mi algoritmo te clasifica como un **${gamifiedRank}**. \n\n`;
+        let reportText = `¡Hola! Soy tu asistente IA de aprendizaje. Mi algoritmo te clasifica como un ${gamifiedRank}. \n\n`;
         
-        reportText += `🎯 **Proyección Saber Pro:** Analizando tu tendencia histórica, tu puntaje proyectado es **${projectedSaberPro} / 300** en el examen final. \n\n`;
+        reportText += `🎯 Proyección Saber Pro: Analizando tu tendencia histórica, tu puntaje proyectado es ${projectedSaberPro} / 300 en el examen final. \n\n`;
         
-        reportText += `Además, calculo que tienes un **${logisticResult.probability}% de probabilidad** de superar el umbral de aprobación. ${logisticResult.recommendation}\n\n`;
+        reportText += `Además, calculo que tienes un ${logisticResult.probability}% de probabilidad de superar el umbral de aprobación. ${logisticResult.recommendation}\n\n`;
         
         if (Object.keys(percentiles).length > 0) {
-            reportText += `📊 **Comparativa de Nivel (Top %):**\n`;
+            reportText += `📊 Comparativa de Nivel (Top %):\n`;
             Object.entries(percentiles).forEach(([type, topPct]) => {
                 const typeName = typeNames[type];
                 let emoji = topPct <= 20 ? '🔥' : topPct <= 50 ? '👍' : '⚠️';
-                reportText += `- En **${typeName}** estás en el **Top ${topPct}%** de toda la clase. ${emoji}\n`;
+                reportText += `- En ${typeName} estás en el Top ${topPct}% de toda la clase. ${emoji}\n`;
             });
         }
         
@@ -199,10 +199,10 @@ class AIAssistantService {
             }
         });
         
-        reportText += `\n💡 **Siguiente Paso Recomendado:** Te sugiero enfocarte en **${typeNames[weakestType]}**. Es el área donde más rápido puedes subir de nivel.\n`;
+        reportText += `\n💡 Siguiente Paso Recomendado: Te sugiero enfocarte en ${typeNames[weakestType]}. Es el área donde más rápido puedes subir de nivel.\n`;
 
         if (logisticResult.riskFactors && logisticResult.riskFactors.length > 0) {
-            reportText += `\n🚨 **Factores a mejorar (Mi radar ha detectado):**\n`;
+            reportText += `\n🚨 Factores a mejorar (Mi radar ha detectado):\n`;
             logisticResult.riskFactors.forEach(rf => {
                 reportText += `- ${rf.factor}\n`;
             });
