@@ -41,6 +41,7 @@ exports.sendVerificationPin = async (to, pin) => {
                 </div>
             `
         });
+        console.log(`✅ [EMAIL ENVIADO] Código de verificación enviado a: ${to}`);
         return true;
     } catch (error) {
         console.error('Error enviando email:', error);
