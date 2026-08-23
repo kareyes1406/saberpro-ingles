@@ -14,14 +14,14 @@
 
     <!-- Shared Modals & Mascota CSS/JS -->
     <link rel="stylesheet" href="/css/modals.css">
-    <script src="/js/mascotaController.js"></script>
+    <script src="/js/mascotaController.js?v=<%= Date.now() %>"></script>
     
     <% if (typeof jsFile !== 'undefined' && jsFile) { %>
-        <% const gameFiles = ['vocabulary.js', 'reading.js', 'pragmatics.js', 'grammar.js', 'boss-battle.js']; %>
+        <% const gameFiles = ['vocabulary.js', 'reading.js', 'pragmatics.js', 'grammar.js', 'boss-battle.js', 'exam.js']; %>
         <% if (gameFiles.includes(jsFile)) { %>
-            <script src="/js/anti-cheat.js"></script>
+            <script src="/js/anti-cheat.js?v=<%= Date.now() %>"></script>
         <% } %>
-        <script src="/js/<%= jsFile %>"></script>
+        <script src="/js/<%= jsFile %>?v=<%= Date.now() %>"></script>
     <% } %>
 </body>
 </html>

@@ -3,7 +3,7 @@
  * Sistema agresivo de detección de abandono y anti-capturas
  */
 
-document.addEventListener("DOMContentLoaded", () => {
+function initAntiCheat() {
     let warnings = 0;
     const MAX_WARNINGS = 2;
 
@@ -112,4 +112,5 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     `;
     document.head.appendChild(style);
-});
+}
+if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", initAntiCheat); } else { initAntiCheat(); }
