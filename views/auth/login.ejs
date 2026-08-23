@@ -424,6 +424,8 @@
                         </svg>
                     </button>
                 </div>
+            <div class="form-options">
+                <a href="#" id="forgotPasswordLink" style="color: var(--cyan); text-decoration: none; font-weight: 500;">¿Olvidaste tu contraseña?</a>
             </div>
 
             <button type="submit" class="btn-submit">Ingresar a la Plataforma</button>
@@ -433,11 +435,79 @@
             ¿No tienes cuenta? <a href="/auth/register">Regístrate aquí</a>
         </div>
     </div>
-
 </div>
+
+<!-- Modal Olvidé Contraseña (Email) -->
+<div class="modal-overlay" id="forgotModal">
+    <div class="modal-content" style="background: #111827; padding: 2rem; border-radius: 12px; max-width: 400px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">
+        <h2 style="margin-top:0; color: #fff;">Recuperar Contraseña</h2>
+        <p style="color: #9ca3af; font-size: 0.9rem;">Ingresa tu correo para recibir un PIN de 6 dígitos.</p>
+        
+        <div class="form-group">
+            <input type="email" id="forgotEmail" class="form-control" placeholder="tu@correo.com">
+        </div>
+        
+        <div id="forgotError" class="flash-error" style="display: none; padding: 0.5rem; margin-bottom: 1rem;"></div>
+        <div id="forgotSuccess" class="flash-success" style="display: none; padding: 0.5rem; margin-bottom: 1rem;"></div>
+        
+        <div style="display:flex; gap: 1rem; margin-top: 1.5rem;">
+            <button id="cancelForgotBtn" class="btn-submit" style="background: transparent; border: 1px solid rgba(255,255,255,0.2);">Cancelar</button>
+            <button id="sendForgotPinBtn" class="btn-submit">Enviar PIN</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ingreso PIN de Recuperación -->
+<div class="modal-overlay" id="resetPinModal">
+    <div class="modal-content" style="background: #111827; padding: 2rem; border-radius: 12px; max-width: 400px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">
+        <h2 style="margin-top:0; color: #fff;">Verifica el PIN</h2>
+        <p style="color: #9ca3af; font-size: 0.9rem;">Ingresa el código que enviamos a tu correo.</p>
+        
+        <div class="form-group" style="display: flex; gap: 5px; justify-content: center; margin: 1.5rem 0;" id="resetPinInputs">
+            <input type="text" maxlength="1" class="form-control pin-box" style="width:40px; text-align:center; padding:0.5rem;" inputmode="numeric">
+            <input type="text" maxlength="1" class="form-control pin-box" style="width:40px; text-align:center; padding:0.5rem;" inputmode="numeric">
+            <input type="text" maxlength="1" class="form-control pin-box" style="width:40px; text-align:center; padding:0.5rem;" inputmode="numeric">
+            <input type="text" maxlength="1" class="form-control pin-box" style="width:40px; text-align:center; padding:0.5rem;" inputmode="numeric">
+            <input type="text" maxlength="1" class="form-control pin-box" style="width:40px; text-align:center; padding:0.5rem;" inputmode="numeric">
+            <input type="text" maxlength="1" class="form-control pin-box" style="width:40px; text-align:center; padding:0.5rem;" inputmode="numeric">
+        </div>
+        
+        <div id="resetPinError" class="flash-error" style="display: none; padding: 0.5rem; margin-bottom: 1rem;"></div>
+        <button id="verifyResetPinBtn" class="btn-submit">Verificar PIN</button>
+    </div>
+</div>
+
+<!-- Modal Nueva Contraseña -->
+<div class="modal-overlay" id="newPasswordModal">
+    <div class="modal-content" style="background: #111827; padding: 2rem; border-radius: 12px; max-width: 400px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">
+        <h2 style="margin-top:0; color: #fff;">Nueva Contraseña</h2>
+        <p style="color: #9ca3af; font-size: 0.9rem;">Debe tener mín. 8 caracteres, una mayúscula y un carácter especial.</p>
+        
+        <div class="form-group">
+            <input type="password" id="newPwd" class="form-control" placeholder="Nueva Contraseña">
+        </div>
+        <div class="form-group">
+            <input type="password" id="confirmNewPwd" class="form-control" placeholder="Confirmar Contraseña">
+        </div>
+        
+        <div id="newPwdError" class="flash-error" style="display: none; padding: 0.5rem; margin-bottom: 1rem;"></div>
+        <button id="saveNewPwdBtn" class="btn-submit">Guardar Contraseña</button>
+    </div>
+</div>
+
+<style>
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.8);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+        backdrop-filter: blur(5px);
+    }
+    .modal-overlay.active { display: flex; }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Lógica de Mostrar/Ocultar Contraseña Principal ---
         const toggleBtns = document.querySelectorAll('.toggle-password');
         toggleBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -454,7 +524,6 @@
                     pwdInput.type = 'text';
                     pwdInput.setAttribute('type', 'text');
                     pwdInput.style.webkitTextSecurity = 'none';
-                    pwdInput.style.fontFamily = "'Inter', sans-serif";
                     btn.innerHTML = `
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
@@ -473,6 +542,139 @@
                     `;
                 }
             });
+        });
+
+        // --- Lógica de Recuperación de Contraseña ---
+        const forgotLink = document.getElementById('forgotPasswordLink');
+        const forgotModal = document.getElementById('forgotModal');
+        const resetPinModal = document.getElementById('resetPinModal');
+        const newPasswordModal = document.getElementById('newPasswordModal');
+        
+        let recoveryEmail = '';
+        let recoveryPin = '';
+
+        forgotLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            forgotModal.classList.add('active');
+        });
+
+        document.getElementById('cancelForgotBtn').addEventListener('click', () => {
+            forgotModal.classList.remove('active');
+        });
+
+        document.getElementById('sendForgotPinBtn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const email = document.getElementById('forgotEmail').value;
+            const errorDiv = document.getElementById('forgotError');
+            const successDiv = document.getElementById('forgotSuccess');
+            
+            if (!email) {
+                errorDiv.textContent = 'Ingresa tu correo';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            errorDiv.style.display = 'none';
+            btn.disabled = true; btn.textContent = 'Enviando...';
+            
+            try {
+                const res = await fetch('/auth/forgot-password', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    recoveryEmail = email;
+                    forgotModal.classList.remove('active');
+                    resetPinModal.classList.add('active');
+                } else {
+                    errorDiv.textContent = result.error || 'Error enviando PIN';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Error de conexión';
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Enviar PIN';
+            }
+        });
+
+        // Manejo de PIN inputs
+        const pinInputs = document.querySelectorAll('.pin-box');
+        pinInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value && index < pinInputs.length - 1) pinInputs[index + 1].focus();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) pinInputs[index - 1].focus();
+            });
+        });
+
+        document.getElementById('verifyResetPinBtn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const pin = Array.from(pinInputs).map(i => i.value).join('');
+            const errorDiv = document.getElementById('resetPinError');
+            
+            if (pin.length !== 6) {
+                errorDiv.textContent = 'Ingresa los 6 dígitos';
+                errorDiv.style.display = 'block'; return;
+            }
+            errorDiv.style.display = 'none';
+            btn.disabled = true; btn.textContent = 'Verificando...';
+            
+            try {
+                const res = await fetch('/auth/verify-reset-pin', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: recoveryEmail, pin })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    recoveryPin = pin;
+                    resetPinModal.classList.remove('active');
+                    newPasswordModal.classList.add('active');
+                } else {
+                    errorDiv.textContent = result.error || 'PIN incorrecto';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Error de red';
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Verificar PIN';
+            }
+        });
+
+        document.getElementById('saveNewPwdBtn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const newPwd = document.getElementById('newPwd').value;
+            const confirm = document.getElementById('confirmNewPwd').value;
+            const errorDiv = document.getElementById('newPwdError');
+            
+            if (!newPwd || !confirm) {
+                errorDiv.textContent = 'Llena ambos campos';
+                errorDiv.style.display = 'block'; return;
+            }
+            
+            btn.disabled = true; btn.textContent = 'Guardando...';
+            try {
+                const res = await fetch('/auth/reset-password', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: recoveryEmail, pin: recoveryPin, newPassword: newPwd, confirmPassword: confirm })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('Contraseña actualizada correctamente. Ya puedes iniciar sesión.');
+                    window.location.reload();
+                } else {
+                    errorDiv.textContent = result.error || 'Error al guardar';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Error de conexión';
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Guardar Contraseña';
+            }
         });
     });
 </script>

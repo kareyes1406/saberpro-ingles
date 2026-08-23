@@ -311,7 +311,15 @@ exports.showPragmatics = async (req, res) => {
         const correctAnswers = {};
         
         // Recolectar opciones incorrectas de todas las preguntas para usar como distractores extra
-        const allWrongOptions = [];
+        const allWrongOptions = [
+            "In a library", "At a train station", "In a hospital", "At a restaurant", 
+            "In a museum", "At a post office", "In a supermarket", "At a hotel",
+            "In a police station", "At an airport", "In a park", "At a school",
+            "Yes, please.", "No, thanks.", "I don't know.", "Maybe later.",
+            "That's a good idea.", "I'm sorry.", "Excuse me.", "You're welcome.",
+            "I agree.", "I disagree.", "It's too expensive.", "I'll take it."
+        ];
+        
         questions.forEach(q => {
             q.Options.forEach(o => {
                 if (!o.IsCorrect) allWrongOptions.push(o.OptionText);
@@ -329,8 +337,8 @@ exports.showPragmatics = async (req, res) => {
                 IsCorrect: o.IsCorrect
             }));
             
-            // Agregar una 4ta opción distractora si solo hay 3
-            if (opts.length < 4) {
+            // Asegurar que siempre haya 4 opciones
+            while (opts.length < 4) {
                 // Buscar un distractor que no se repita con las opciones existentes
                 const existingTexts = opts.map(o => o.OptionText.toLowerCase());
                 const availableDistractors = allWrongOptions.filter(t => 
@@ -339,8 +347,15 @@ exports.showPragmatics = async (req, res) => {
                 if (availableDistractors.length > 0) {
                     const randomDistractor = availableDistractors[Math.floor(Math.random() * availableDistractors.length)];
                     opts.push({
-                        OptionID: -1 * q.QuestionID, // ID negativo para identificarlo como distractor extra
+                        OptionID: -(opts.length + 1) * q.QuestionID, // ID negativo único
                         OptionText: randomDistractor,
+                        IsCorrect: false
+                    });
+                } else {
+                    // Si no hay distractores, usar uno genérico para que no se quede bloqueado
+                    opts.push({
+                        OptionID: -(opts.length + 1) * q.QuestionID,
+                        OptionText: 'No aplica',
                         IsCorrect: false
                     });
                 }

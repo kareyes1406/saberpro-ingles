@@ -133,17 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 explanationBox.style.display = 'block';
             }
             
-            setTimeout(() => {
-                if (battleEnded) return;
-                if (explanationBox) explanationBox.style.display = 'none';
-                
-                if (playerHpValue <= 0 || currentQuestionIndex >= TOTAL_QUESTIONS - 1) {
-                    finishBattle();
-                } else {
-                    currentQuestionIndex++;
-                    loadQuestion();
-                }
-            }, 3000);
+            let nextBtn = document.getElementById('nextQuestionBtn');if (!nextBtn) {nextBtn = document.createElement('button');nextBtn.id = 'nextQuestionBtn';nextBtn.className = 'btn-submit';nextBtn.style.marginTop = '1rem';nextBtn.style.background = '#0ea5e9';nextBtn.style.color = 'white';nextBtn.style.border = 'none';nextBtn.style.padding = '0.75rem 1.5rem';nextBtn.style.borderRadius = '8px';nextBtn.style.cursor = 'pointer';nextBtn.textContent = 'Siguiente ➔';const expBox = document.getElementById('explanationBox');if (expBox) expBox.appendChild(nextBtn);}nextBtn.onclick = () => {if (battleEnded) return;const expBox = document.getElementById('explanationBox');if (expBox) expBox.style.display = 'none';if (playerHpValue <= 0 || currentQuestionIndex >= TOTAL_QUESTIONS - 1) {finishBattle();} else {currentQuestionIndex++;loadQuestion();}};
             
         } catch (err) {
             console.error('Error submitting answer:', err);
@@ -172,17 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             explanationBox.style.display = 'block';
         }
         
-        setTimeout(() => {
-            if (battleEnded) return;
-            if (explanationBox) explanationBox.style.display = 'none';
-            
-            if (playerHpValue <= 0 || currentQuestionIndex >= TOTAL_QUESTIONS - 1) {
-                finishBattle();
-            } else {
-                currentQuestionIndex++;
-                loadQuestion();
-            }
-        }, 3000);
+        let nextBtn = document.getElementById('nextQuestionBtn');if (!nextBtn) {nextBtn = document.createElement('button');nextBtn.id = 'nextQuestionBtn';nextBtn.className = 'btn-submit';nextBtn.style.marginTop = '1rem';nextBtn.style.background = '#0ea5e9';nextBtn.style.color = 'white';nextBtn.style.border = 'none';nextBtn.style.padding = '0.75rem 1.5rem';nextBtn.style.borderRadius = '8px';nextBtn.style.cursor = 'pointer';nextBtn.textContent = 'Siguiente ➔';const expBox = document.getElementById('explanationBox');if (expBox) expBox.appendChild(nextBtn);}nextBtn.onclick = () => {if (battleEnded) return;const expBox = document.getElementById('explanationBox');if (expBox) expBox.style.display = 'none';if (playerHpValue <= 0 || currentQuestionIndex >= TOTAL_QUESTIONS - 1) {finishBattle();} else {currentQuestionIndex++;loadQuestion();}};
     }
     
     function updateHpBars() {

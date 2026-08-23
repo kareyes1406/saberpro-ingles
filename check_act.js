@@ -1,0 +1,1 @@
+﻿const { executeQuery } = require("./config/database"); executeQuery("SELECT WeekID, COUNT(*) as Count, MAX(ActivityTypeID) as MaxType FROM Activities GROUP BY WeekID").then(res => { console.log(res.recordset); process.exit(); });

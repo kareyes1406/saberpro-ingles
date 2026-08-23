@@ -76,14 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             expBox.style.display = 'flex';
         }
 
-        setTimeout(() => {
-            currentIndex++;
-            if (currentIndex >= totalQuestions) {
-                submitResults();
-            } else {
-                renderQuestion();
-            }
-        }, 3000); // Wait 3 seconds
+        let nextBtn = document.getElementById('nextQuestionBtn');if (!nextBtn) {nextBtn = document.createElement('button');nextBtn.id = 'nextQuestionBtn';nextBtn.className = 'btn-primary';nextBtn.style.marginTop = '1rem';nextBtn.style.display = 'block';nextBtn.textContent = 'Siguiente ➔';const expBox = document.getElementById('explanationBox');if (expBox) expBox.appendChild(nextBtn);}nextBtn.onclick = () => {const expBox = document.getElementById('explanationBox');if (expBox) expBox.style.display = 'none';currentIndex++;if (currentIndex >= totalQuestions) {submitResults();} else {renderQuestion();}}; // Wait 3 seconds
     }
 
     async function submitResults() {

@@ -198,3 +198,109 @@ exports.logout = (req, res) => {
         res.redirect('/auth/login');
     });
 };
+
+// ==========================================
+// RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, error: 'Email requerido' });
+
+        const user = await User.findByEmail(email);
+        if (!user) {
+            // Silencioso por seguridad, no revelar si el email existe o no
+            return res.json({ success: true, message: 'Si el correo existe, se enviará un PIN de recuperación' });
+        }
+
+        // Reutilizamos el sistema de pines existente
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        await User.saveVerificationPin(user.UserID, pin); // Expira en 10 mins (lógica ya en modelo)
+
+        // Enviar correo (asumimos que emailService.sendVerificationPin se puede reusar, o mandamos texto diferente)
+        // Por simplicidad, usamos la misma función de enviar PIN
+        await emailService.sendVerificationPin(email, pin);
+
+        res.json({ success: true, message: 'Si el correo existe, se enviará un PIN de recuperación' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+};
+
+exports.verifyResetPin = async (req, res) => {
+    try {
+        const { email, pin } = req.body;
+        if (!email || !pin) return res.status(400).json({ success: false, error: 'Email y PIN requeridos' });
+
+        const user = await User.findByEmail(email);
+        if (!user) return res.status(400).json({ success: false, error: 'Datos inválidos' });
+
+        const result = await executeQuery(
+            'SELECT VerificationPin, PinExpiry FROM Users WHERE UserID = @UserID',
+            [{ name: 'UserID', type: sql.Int, value: user.UserID }]
+        );
+
+        const dbPin = result.recordset[0].VerificationPin;
+        const expiry = result.recordset[0].PinExpiry;
+
+        if (!dbPin || dbPin !== pin) {
+            return res.status(400).json({ success: false, error: 'PIN incorrecto' });
+        }
+
+        if (new Date() > new Date(expiry)) {
+            return res.status(400).json({ success: false, error: 'El PIN ha expirado' });
+        }
+
+        // Si es válido, devolvemos éxito para que el frontend muestre el form de nueva clave
+        res.json({ success: true, message: 'PIN verificado' });
+
+    } catch (error) {
+        console.error('Verify reset PIN error:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, pin, newPassword, confirmPassword } = req.body;
+        if (!email || !pin || !newPassword || !confirmPassword) {
+            return res.status(400).json({ success: false, error: 'Todos los campos son obligatorios' });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ success: false, error: 'Las contraseñas no coinciden' });
+        }
+        if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+            return res.status(400).json({ success: false, error: 'La contraseña no cumple requisitos de seguridad' });
+        }
+
+        const user = await User.findByEmail(email);
+        if (!user) return res.status(400).json({ success: false, error: 'Usuario inválido' });
+
+        // Verificamos PIN nuevamente por seguridad
+        const result = await executeQuery(
+            'SELECT VerificationPin, PinExpiry FROM Users WHERE UserID = @UserID',
+            [{ name: 'UserID', type: sql.Int, value: user.UserID }]
+        );
+        const dbPin = result.recordset[0].VerificationPin;
+        if (!dbPin || dbPin !== pin) return res.status(400).json({ success: false, error: 'PIN inválido o usado' });
+
+        // Hasheamos nueva clave y actualizamos
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        
+        // Limpiar el PIN y actualizar clave
+        await executeQuery(
+            'UPDATE Users SET PasswordHash = @PasswordHash, VerificationPin = NULL, PinExpiry = NULL WHERE UserID = @UserID',
+            [
+                { name: 'PasswordHash', type: sql.NVarChar, value: hashedPassword },
+                { name: 'UserID', type: sql.Int, value: user.UserID }
+            ]
+        );
+
+        res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+};

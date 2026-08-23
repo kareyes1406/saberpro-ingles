@@ -1,0 +1,1 @@
+﻿const { executeQuery } = require("./config/database"); executeQuery("SELECT QuestionID, QuestionText FROM Questions WHERE ActivityID = 1914").then(res => { console.log(res.recordset); process.exit(); });

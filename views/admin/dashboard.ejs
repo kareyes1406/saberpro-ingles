@@ -96,55 +96,48 @@
       <button onclick="exportDashboardPDF()" class="btn-secondary" style="background:#ef4444; color:white; border:none;">📄 PDF Informe</button>
     </div>
   </div>
-  <div style="overflow-x: auto;">
-    <table id="usersTable">
-      <thead>
-        <tr>
-          <th>ID</th><th>Nombre</th><th>Email</th><th>XP</th>
-          <th>Sem. / Actividad</th><th>Racha</th><th>Estado</th><th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% users.forEach(user => { %>
-          <tr data-user-id="<%= user.UserID %>">
-            <td><%= user.UserID %></td>
-            <td><%= user.FirstName %> <%= user.LastName %></td>
-            <td><%= user.Email %></td>
-            <td><%= user.TotalXP %> XP</td>
-            <td>
-                Sem. <%= user.CurrentWeek || 1 %> 
-                <br>
-                <small style="color: var(--text-secondary);"><%= user.CurrentActivity || 'Sin actividad' %></small>
-            </td>
-            <td>🔥 <%= user.CurrentStreak %></td>
-          <td>
+  <div class="accordion-list" id="usersList">
+    <% users.forEach(user => { %>
+      <details class="user-accordion" data-user-id="<%= user.UserID %>">
+        <summary class="user-summary">
+          <div class="user-main-info">
+            <strong><%= user.FirstName %> <%= user.LastName %></strong>
             <span class="badge-pill <%= user.IsActive ? 'active' : 'inactive' %>">
               <%= user.IsActive ? 'Activo' : 'Inactivo' %>
             </span>
-          </td>
-          <td>
-            <div class="action-btns">
-              <a href="/admin/students/<%= user.UserID %>/detail" class="btn-icon" title="Ver Progreso Detallado" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; border-radius:6px; padding:0.4rem 0.5rem;">👁️</a>
-              <button class="btn-icon edit" 
-                      data-user-id="<%= user.UserID %>"
-                      data-first-name="<%= user.FirstName %>"
-                      data-last-name="<%= user.LastName %>"
-                      data-email="<%= user.Email %>"
-                      data-is-active="<%= user.IsActive ? '1' : '0' %>"
-                      onclick="openEditModal({
-                        UserID: this.dataset.userId,
-                        FirstName: this.dataset.firstName,
-                        LastName: this.dataset.lastName,
-                        Email: this.dataset.email,
-                        IsActive: this.dataset.isActive === '1'
-                      })">✏️</button>
-              <button class="btn-icon delete" onclick="deleteUser('<%= user.UserID %>')">🗑️</button>
-            </div>
-          </td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
+          </div>
+          <div class="user-sub-info">
+            <small><%= user.Email %></small>
+            <small>Semana <%= user.CurrentWeek || 1 %> - <%= user.CurrentActivity || 'Sin actividad' %></small>
+          </div>
+        </summary>
+        <div class="user-details-content">
+          <div class="user-stats">
+            <div><strong>ID:</strong> <%= user.UserID %></div>
+            <div><strong>XP Total:</strong> <%= user.TotalXP %> XP</div>
+            <div><strong>Racha:</strong> 🔥 <%= user.CurrentStreak %> días</div>
+          </div>
+          <div class="action-btns">
+            <a href="/admin/students/<%= user.UserID %>/detail" class="btn-icon" title="Ver Progreso Detallado" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; border-radius:6px; padding:0.4rem 0.5rem; display:inline-flex; align-items:center; justify-content:center;">👁️ Progreso</a>
+            <button class="btn-icon edit" 
+                    data-user-id="<%= user.UserID %>"
+                    data-first-name="<%= user.FirstName %>"
+                    data-last-name="<%= user.LastName %>"
+                    data-email="<%= user.Email %>"
+                    data-is-active="<%= user.IsActive ? '1' : '0' %>"
+                    onclick="openEditModal({
+                      UserID: this.dataset.userId,
+                      FirstName: this.dataset.firstName,
+                      LastName: this.dataset.lastName,
+                      Email: this.dataset.email,
+                      IsActive: this.dataset.isActive === '1'
+                    })"
+                    style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">✏️ Editar</button>
+            <button class="btn-icon delete" onclick="deleteUser('<%= user.UserID %>')" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">🗑️ Eliminar</button>
+          </div>
+        </div>
+      </details>
+    <% }); %>
   </div>
 </div>
 </div> <!-- End pdf-content -->
@@ -477,6 +470,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     font-size: 0.8rem;
     margin-top: 40px;
     page-break-inside: avoid;
+}
+
+/* Accordion Styles for Users List */
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.user-accordion {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.user-accordion[open] {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--accent-cyan);
+}
+
+.user-summary {
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  list-style: none; /* Hide default arrow */
+}
+
+.user-summary::-webkit-details-marker {
+  display: none;
+}
+
+.user-summary:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.user-main-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.user-sub-info {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.user-details-content {
+  padding: 15px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.user-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  background: rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.user-details-content .action-btns {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .user-sub-info {
+    flex-direction: column;
+    gap: 2px;
+  }
 }
 </style>
 

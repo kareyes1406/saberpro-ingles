@@ -17,6 +17,10 @@
     <script src="/js/mascotaController.js"></script>
     
     <% if (typeof jsFile !== 'undefined' && jsFile) { %>
+        <% const gameFiles = ['vocabulary.js', 'reading.js', 'pragmatics.js', 'grammar.js', 'boss-battle.js']; %>
+        <% if (gameFiles.includes(jsFile)) { %>
+            <script src="/js/anti-cheat.js"></script>
+        <% } %>
         <script src="/js/<%= jsFile %>"></script>
     <% } %>
 </body>

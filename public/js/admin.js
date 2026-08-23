@@ -159,7 +159,7 @@ function setupSearch() {
     if (!searchInput) return;
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#usersTable tbody tr');
+        const rows = document.querySelectorAll('#usersList .user-accordion');
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(query) ? '' : 'none';
@@ -277,21 +277,36 @@ async function deleteUser(userId) {
 }
 
 function exportToCSV() {
-    const table = document.getElementById('usersTable');
-    if (!table) return;
+    const accordions = document.querySelectorAll('#usersList .user-accordion');
+    if (accordions.length === 0) return;
+    
     let csv = [];
-    const rows = table.querySelectorAll('tr');
-    rows.forEach(row => {
-        const cols = Array.from(row.querySelectorAll('td, th'));
-        // Excluir la última columna (Acciones)
-        if (cols.length > 0) {
-            cols.pop(); 
-        }
-        const rowData = cols.map(col => '"' + col.textContent.trim().replace(/"/g, '""') + '"');
+    // Cabecera
+    csv.push('"ID","Nombre Completo","Email","Estado","Semana - Actividad","XP Total","Racha"');
+    
+    accordions.forEach(acc => {
+        const id = acc.querySelector('.user-stats div:nth-child(1)').textContent.replace('ID: ', '').trim();
+        const xp = acc.querySelector('.user-stats div:nth-child(2)').textContent.replace('XP Total: ', '').replace(' XP', '').trim();
+        const streak = acc.querySelector('.user-stats div:nth-child(3)').textContent.replace('Racha: 🔥 ', '').replace(' días', '').trim();
+        
+        const name = acc.querySelector('.user-main-info strong').textContent.trim();
+        const status = acc.querySelector('.user-main-info .badge-pill').textContent.trim();
+        
+        const email = acc.querySelector('.user-sub-info small:nth-child(1)').textContent.trim();
+        const activity = acc.querySelector('.user-sub-info small:nth-child(2)').textContent.trim();
+        
+        const rowData = [
+            `"${id}"`,
+            `"${name}"`,
+            `"${email}"`,
+            `"${status}"`,
+            `"${activity}"`,
+            `"${xp}"`,
+            `"${streak}"`
+        ];
         csv.push(rowData.join(','));
     });
     
-    // Fallback compatible y directo
     const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(csv.join('\n'));
     const link = document.createElement('a');
     link.setAttribute("href", csvContent);
