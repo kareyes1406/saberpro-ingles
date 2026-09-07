@@ -11,6 +11,35 @@ function shuffleArray(array) {
     return arr;
 }
 
+exports.showPreTestIntro = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        // Check if user already took the pre-test
+        const existingQuery = `SELECT * FROM UserExams WHERE UserID = @UserID AND ExamType = 'PRE'`;
+        const existingResult = await executeQuery(existingQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);
+        
+        if (existingResult.recordset.length > 0) {
+            return res.redirect('/student'); // Already completed
+        }
+
+        // Show UDECIA's introduction before the exam
+        const studentStats = await Gamification.getStudentStats(userId) || {
+            TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0
+        };
+
+        res.render('student/exam-intro', {
+            title: 'Antes de Empezar...',
+            cssFile: 'exam-intro.css',
+            studentStats,
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('Show Pre-Test Intro Error:', error);
+        res.status(500).send('Error cargando la introducción.');
+    }
+};
+
 exports.showPreTest = async (req, res) => {
     try {
         const userId = req.session.userId;

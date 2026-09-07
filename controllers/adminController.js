@@ -52,7 +52,7 @@ exports.showDashboard = async (req, res) => {
             SELECT U.UserID, U.FirstName, U.LastName, U.Email, U.IsActive, U.LastLoginAt,
                    ISNULL(UG.TotalXP, 0) as TotalXP, ISNULL(UG.Level, 1) as Level,
                    ISNULL(UG.CurrentStreak, 0) as CurrentStreak, ISNULL(UG.TotalCoins, 0) as TotalCoins,
-                   (SELECT MAX(MW.WeekNumber) FROM UserProgress UP2
+                ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
                     INNER JOIN ModuleWeeks MW ON A2.WeekID = MW.WeekID
                     WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1) as CurrentWeek,
@@ -90,20 +90,33 @@ exports.listUsers = async (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        const { firstName, lastName, email, password } = req.body;
+        const { firstName, lastName, email, password, role } = req.body;
         const hashedPassword = await bcrypt.hash(password || 'SaberPro2026!', 10);
+        
+        let targetRoleId = 1; // Default: student
+        if (role === 'professor' || role === '3' || role === 3) {
+            const roleRes = await executeQuery("SELECT RoleID FROM Roles WHERE RoleName = 'professor'");
+            if (roleRes.recordset.length > 0) {
+                targetRoleId = roleRes.recordset[0].RoleID;
+            } else {
+                const insertRole = await executeQuery("INSERT INTO Roles (RoleName, Description) OUTPUT INSERTED.RoleID VALUES ('professor', 'Profesor - Lectura de estadísticas')");
+                targetRoleId = insertRole.recordset[0]?.RoleID || 3;
+            }
+        }
         
         const newUser = await User.create({
             FirstName: firstName, LastName: lastName,
-            Email: email, PasswordHash: hashedPassword, RoleID: 1
+            Email: email, PasswordHash: hashedPassword, RoleID: targetRoleId
         });
         
-        await executeQuery(
-            'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
-            [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
-        );
+        if (targetRoleId === 1) {
+            await executeQuery(
+                'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
+                [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
+            );
+        }
         
-        res.json({ success: true, message: 'Estudiante creado exitosamente', user: newUser });
+        res.json({ success: true, message: targetRoleId === 1 ? 'Estudiante creado exitosamente' : 'Profesor creado exitosamente', user: newUser });
     } catch (error) {
         console.error('Create User Error:', error);
         res.status(500).json({ error: 'Error al crear usuario' });
@@ -240,7 +253,7 @@ exports.getKPIData = async (req, res) => {
                 ISNULL(UG.CurrentStreak, 0) as currentStreak,
                 ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
                 ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
-                ISNULL((SELECT MAX(MW.WeekNumber) FROM UserProgress UP2
+                ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
                     INNER JOIN ModuleWeeks MW ON A2.WeekID = MW.WeekID
                     WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as completedWeeks
@@ -354,14 +367,51 @@ exports.showStudentDetail = async (req, res) => {
 
         const linearResult = MLService.linearRegression(weekData);
 
-        // Build features for Logistic Regression
+        // ── FIX: Calcular avgScore y avgTimeSeconds POR ACTIVIDAD (igual que aiAssistantService) ──
+        // Obtener progreso individual por actividad para cálculos consistentes
+        const individualProgress = await executeQuery(`
+            SELECT UP.Score, UP.AttemptNumber, UP.TimeSpentSeconds, UP.IsCompleted,
+                   AT.TypeName
+            FROM UserProgress UP
+            INNER JOIN Activities A ON UP.ActivityID = A.ActivityID
+            INNER JOIN ActivityTypes AT ON A.ActivityTypeID = AT.ActivityTypeID
+            WHERE UP.UserID = @UserID
+        `, [{ name: 'UserID', type: sql.Int, value: targetUserId }]);
+        const indivProgress = individualProgress.recordset;
+        const indivCount = indivProgress.length;
+
+        // avgScore: usar promedios por competencia con fallback al Pre-Test (como aiAssistantService)
+        const compStats = { Vocabulary: { sum: 0, count: 0 }, Reading: { sum: 0, count: 0 }, Pragmatics: { sum: 0, count: 0 }, Grammar: { sum: 0, count: 0 } };
+        indivProgress.forEach(p => {
+            if (compStats[p.TypeName]) {
+                compStats[p.TypeName].sum += parseFloat(p.Score || 0);
+                compStats[p.TypeName].count++;
+            }
+        });
+        const compAverages = {};
+        ['Vocabulary', 'Reading', 'Pragmatics', 'Grammar'].forEach(type => {
+            if (compStats[type].count > 0) {
+                compAverages[type] = compStats[type].sum / compStats[type].count;
+            } else if (preTest) {
+                // Fallback al Pre-Test para consistencia con la vista del estudiante
+                if (type === 'Vocabulary') compAverages[type] = parseFloat(preTest.VocabularyScore || 0);
+                else if (type === 'Reading') compAverages[type] = parseFloat(preTest.ReadingScore || 0);
+                else if (type === 'Pragmatics') compAverages[type] = parseFloat(preTest.PragmaticsScore || 0);
+                else if (type === 'Grammar') compAverages[type] = parseFloat(preTest.GrammarScore || 0);
+            } else {
+                compAverages[type] = 0;
+            }
+        });
+        const avgScore = (compAverages.Vocabulary + compAverages.Reading + compAverages.Pragmatics + compAverages.Grammar) / 4;
+
+        // avgAttempts: promedio por actividad individual
+        const avgAttempts = indivCount > 0 ? indivProgress.reduce((s, p) => s + (p.AttemptNumber || 1), 0) / indivCount : 1;
+        
+        // avgTimeSeconds: promedio POR ACTIVIDAD (no por semana) - FIX del bug reportado
+        const avgTimeSeconds = indivCount > 0 ? indivProgress.reduce((s, p) => s + (p.TimeSpentSeconds || 0), 0) / indivCount : 0;
+
+        // completedWeeks: usar COUNT(DISTINCT) consistente
         const completedWeeks = weeklyProgress.recordset.filter(w => w.CompletedActivities > 0).length;
-        const allScores = weeklyProgress.recordset.filter(w => w.AvgScore !== null).map(w => parseFloat(w.AvgScore));
-        const avgScore = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : 0;
-        const allAttempts = weeklyProgress.recordset.filter(w => w.AvgAttempts !== null).map(w => parseFloat(w.AvgAttempts));
-        const avgAttempts = allAttempts.length > 0 ? allAttempts.reduce((a, b) => a + b, 0) / allAttempts.length : 1;
-        const totalTime = weeklyProgress.recordset.reduce((s, w) => s + (w.TotalTime || 0), 0);
-        const avgTimeSeconds = completedWeeks > 0 ? totalTime / completedWeeks : 0;
 
         const logisticResult = MLService.logisticRegression({
             avgScore,
@@ -378,7 +428,7 @@ exports.showStudentDetail = async (req, res) => {
                 ISNULL(UG.TotalXP, 0) as totalXP,
                 ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
                 ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
-                ISNULL((SELECT MAX(MW.WeekNumber) FROM UserProgress UP2
+                ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
                     INNER JOIN ModuleWeeks MW ON A2.WeekID = MW.WeekID
                     WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as completedWeeks
@@ -397,9 +447,11 @@ exports.showStudentDetail = async (req, res) => {
             preTest,
             weeklyProgress: weeklyProgress.recordset,
             competencyProgress: competencyProgress.recordset,
+            compAverages,
             linearResult,
             logisticResult,
             clusterInfo: thisStudentCluster,
+            projectedSaberPro: Math.round((linearResult.projectedScore / 100) * 300) || Math.round((avgScore / 100) * 300),
             user: req.session.user
         });
     } catch (error) {

@@ -1,11 +1,11 @@
-<%- include('../partials/admin-header') %>
+<%- include('../partials/professor-header') %>
 
 <div style="max-width: 1200px; margin: 0 auto; padding: 1.5rem;">
 
   <!-- Back button + Header -->
   <div style="display:flex; align-items:center; gap:1rem; margin-bottom:2rem; flex-wrap:wrap;">
-    <a href="/admin/dashboard" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-primary); text-decoration:none; padding:0.5rem 1rem; border-radius:8px; font-size:0.9rem;">← Volver al Dashboard</a>
-    <h1 style="margin:0; font-size:1.8rem;">📋 Perfil de Estudiante</h1>
+    <a href="/professor/dashboard" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-primary); text-decoration:none; padding:0.5rem 1rem; border-radius:8px; font-size:0.9rem;">← Volver al Dashboard Docente</a>
+    <h1 style="margin:0; font-size:1.8rem;">📋 Perfil y Diagnóstico del Estudiante</h1>
   </div>
 
   <!-- Student Header Card -->
@@ -128,7 +128,7 @@
       
       <p style="font-size:0.85rem; margin:0 0 0.75rem; color:var(--text-primary);"><%= logisticResult.recommendation %></p>
       
-      <% if (logisticResult.riskFactors.length > 0) { %>
+      <% if (logisticResult.riskFactors && logisticResult.riskFactors.length > 0) { %>
         <h4 style="margin:0 0 0.5rem; font-size:0.85rem; color:#ef4444;">⚠️ Factores de Riesgo:</h4>
         <ul style="margin:0; padding-left:1.25rem; font-size:0.8rem; color:var(--text-secondary);">
           <% logisticResult.riskFactors.forEach(rf => { %>

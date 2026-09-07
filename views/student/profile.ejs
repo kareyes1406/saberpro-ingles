@@ -23,35 +23,39 @@
     <!-- Stats Grid -->
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom: 2.5rem;">
         <!-- Level Card -->
-        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
+        <div class="stat-tooltip-wrapper" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
             <div style="font-size:2.5rem; margin-bottom:0.5rem;">⭐</div>
             <span style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Nivel de Jugador</span>
             <h3 style="font-size:2rem; margin:0.5rem 0 0 0; font-weight:800; color:var(--accent-cyan);">Nivel <%= studentStats.Level %></h3>
             <p style="margin:0; font-size:0.85rem; color:var(--text-muted);"><%= studentStats.TotalXP %> XP Totales</p>
+            <div class="stat-tooltip">Sube de nivel sumando XP por cada lección y actividad completada.</div>
         </div>
 
         <!-- Streak Card -->
-        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
+        <div class="stat-tooltip-wrapper" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
             <div style="font-size:2.5rem; margin-bottom:0.5rem;">🔥</div>
             <span style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Racha de Ingresos</span>
             <h3 style="font-size:2rem; margin:0.5rem 0 0 0; font-weight:800; color:var(--accent-gold);"><%= studentStats.CurrentStreak %> Días</h3>
             <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">Racha Máxima: <%= studentStats.LongestStreak %> Días</p>
+            <div class="stat-tooltip">Días continuos estudiando en la plataforma. ¡No dejes que se apague la llama!</div>
         </div>
 
         <!-- Coins Card -->
-        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
+        <div class="stat-tooltip-wrapper" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
             <div style="font-size:2.5rem; margin-bottom:0.5rem;">🪙</div>
             <span style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Monedas Acumuladas</span>
             <h3 style="font-size:2rem; margin:0.5rem 0 0 0; font-weight:800; color:#f59e0b;"><%= studentStats.TotalCoins %></h3>
             <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">Gastadas: <%= studentStats.CoinsSpent || 0 %></p>
+            <div class="stat-tooltip">Monedas acumuladas para canjear por potenciadores en la Tienda.</div>
         </div>
 
         <!-- Completion Card -->
-        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
+        <div class="stat-tooltip-wrapper" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
             <div style="font-size:2.5rem; margin-bottom:0.5rem;">✅</div>
             <span style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Sub-módulos Completados</span>
             <h3 style="font-size:2rem; margin:0.5rem 0 0 0; font-weight:800; color:#10b981;"><%= progressStats.CompletedActivities || 0 %></h3>
             <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">Calificación Promedio: <%= progressStats.AverageScore ? Math.round(progressStats.AverageScore) : 0 %>%</p>
+            <div class="stat-tooltip">Total de actividades superadas exitosamente con su nota promedio.</div>
         </div>
     </div>
 

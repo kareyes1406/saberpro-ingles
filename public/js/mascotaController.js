@@ -1,12 +1,15 @@
 /**
  * mascotaController.js
- * Máquina de Estados para la Mascota Interactiva (Husky)
+ * Máquina de Estados para UDECIA — Compañera de Entrenamiento
  * 
- * Estados:
- *   - idle: Skin base según el módulo actual
- *   - exito: feliz.png (3 segundos, luego regresa a skin base)
- *   - error: triste.png (3 segundos, luego regresa a skin base)
- *   - pensando: pensando.png (inactividad > 15s o fetch en curso)
+ * Estados (14 imágenes):
+ *   - idle: idle.png (quieta)
+ *   - saludar: saludar.png
+ *   - exito/celebrar: celebrar1.png, celebrar2.png, celebrar3.png (aleatorio)
+ *   - error/triste: triste1.png, triste2.png, triste3.png (aleatorio)
+ *   - pensando: pensar1.png, pensar2.png, pensar3.png (aleatorio)
+ *   - explicar: explicar1.png, explicar2.png (aleatorio)
+ *   - chatear: chatear.png
  * 
  * Función global: triggerMascota(estado, mensaje)
  */
@@ -18,20 +21,14 @@
     const IDLE_TIMEOUT = 15000; // 15 segundos de inactividad
     const REACTION_DURATION = 3000; // 3 segundos de reacción
 
-    // Mapeo de rutas a skins
-    const SKIN_MAP = {
-        'vocabulary': 'skin-vocabulario.png',
-        'reading': 'skin-lectura.png',
-        'pragmatics': 'skin-pragmatica.png',
-        'grammar': 'skin-gramatica.png',
-        'boss': 'skin-jefe.png'
-    };
-
-    // Emociones
+    // Emociones con múltiples variantes (selección aleatoria)
     const EMOTIONS = {
-        exito: 'feliz.png',
-        error: 'triste.png',
-        pensando: 'pensando.png'
+        exito:    ['celebrar1.png', 'celebrar2.png', 'celebrar3.png'],
+        error:    ['triste1.png', 'triste2.png', 'triste3.png'],
+        pensando: ['pensar1.png', 'pensar2.png', 'pensar3.png'],
+        saludar:  ['saludar.png'],
+        explicar: ['explicar1.png', 'explicar2.png'],
+        chatear:  ['chatear.png']
     };
 
     let currentSkin = 'idle.png';
@@ -40,20 +37,14 @@
     let isReacting = false;
 
     /**
-     * Detecta el skin base según la URL actual
+     * Selecciona una imagen aleatoria de un array de variantes
      */
-    function detectSkin() {
-        const path = window.location.pathname;
-        for (const [key, skin] of Object.entries(SKIN_MAP)) {
-            if (path.includes(key)) {
-                return skin;
-            }
-        }
-        return 'idle.png';
+    function pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
     }
 
     /**
-     * Cambia la imagen de la mascota
+     * Cambia la imagen de UDECIA
      */
     function setMascotaImage(filename) {
         const img = document.getElementById('mascotaImg');
@@ -83,7 +74,7 @@
     }
 
     /**
-     * Regresa al skin base del módulo actual
+     * Regresa al estado idle
      */
     function returnToBaseSkin() {
         isReacting = false;
@@ -99,9 +90,9 @@
 
     /**
      * Función global: triggerMascota(estado, mensaje)
-     * Cambia la mascota al estado indicado y muestra el mensaje en el tooltip
+     * Cambia a UDECIA al estado indicado y muestra el mensaje en el tooltip
      * 
-     * @param {string} estado - 'exito', 'error', 'pensando'
+     * @param {string} estado - 'exito', 'error', 'pensando', 'saludar', 'explicar', 'chatear'
      * @param {string} mensaje - Texto a mostrar en el globo
      */
     window.triggerMascota = function (estado, mensaje) {
@@ -111,33 +102,34 @@
             reactionTimer = null;
         }
 
-        const emotionFile = EMOTIONS[estado];
-        if (!emotionFile) return;
+        const emotionFiles = EMOTIONS[estado];
+        if (!emotionFiles) return;
 
         isReacting = true;
 
-        // Cambiar imagen
-        setMascotaImage(emotionFile);
+        // Seleccionar imagen aleatoria del estado
+        const selectedFile = pickRandom(emotionFiles);
+        setMascotaImage(selectedFile);
 
         // Mostrar tooltip
         if (mensaje) {
             showTooltip(mensaje);
         }
 
-        // Añadir animación de bounce
+        // Añadir animación
         const container = document.getElementById('mascotaContainer');
         if (container) {
             container.classList.remove('bounce', 'shake');
             void container.offsetWidth; // forzar reflow
-            if (estado === 'exito') {
+            if (estado === 'exito' || estado === 'saludar') {
                 container.classList.add('bounce');
             } else if (estado === 'error') {
                 container.classList.add('shake');
             }
         }
 
-        // Estado "pensando" no regresa solo, se queda hasta que otro evento lo cambie
-        if (estado !== 'pensando') {
+        // Los estados "pensando", "explicar" y "chatear" no regresan solos
+        if (estado !== 'pensando' && estado !== 'explicar' && estado !== 'chatear') {
             reactionTimer = setTimeout(() => {
                 returnToBaseSkin();
             }, REACTION_DURATION);
@@ -152,10 +144,10 @@
             clearTimeout(idleTimer);
         }
 
-        // Si está pensando por inactividad, regresar al skin base
+        // Si está pensando por inactividad, regresar al idle
         if (!isReacting) {
             const img = document.getElementById('mascotaImg');
-            if (img && img.src.includes('pensando.png')) {
+            if (img && (img.src.includes('pensar1') || img.src.includes('pensar2') || img.src.includes('pensar3'))) {
                 returnToBaseSkin();
             }
         }
@@ -177,8 +169,7 @@
                 triggerMascota('pensando', 'Procesando...');
             }
             return originalFetch.apply(this, args).then(response => {
-                // Regresar a skin base cuando termina la petición
-                if (!isReacting || document.getElementById('mascotaImg')?.src.includes('pensando.png')) {
+                if (!isReacting || document.getElementById('mascotaImg')?.src.includes('pensar')) {
                     returnToBaseSkin();
                 }
                 return response;
@@ -193,8 +184,8 @@
      * Inicialización
      */
     function init() {
-        // Detectar skin base
-        currentSkin = detectSkin();
+        // UDECIA siempre empieza en idle
+        currentSkin = 'idle.png';
         setMascotaImage(currentSkin);
 
         // Eventos de actividad del usuario para resetear el timer de inactividad
@@ -208,22 +199,29 @@
         // Interceptar fetch
         interceptFetch();
 
-        // Click en la mascota para un saludo aleatorio
+        // Click en UDECIA para un saludo
         const container = document.getElementById('mascotaContainer');
         if (container) {
             container.addEventListener('click', () => {
                 const saludos = [
-                    '¡Tú puedes! 💪',
-                    '¡Sigue adelante! 🚀',
-                    '¡Gran trabajo! ⭐',
-                    '¡No te rindas! 🔥',
-                    '¡Eres increíble! 🎉',
-                    '¡A por todas! 🏆'
+                    '¡Hola! Soy UDECIA, ¡tú puedes! 💪',
+                    '¡Sigue adelante, vas muy bien! 🚀',
+                    '¡Gran trabajo! Estoy orgullosa de ti ⭐',
+                    '¡No te rindas, cada paso cuenta! 🔥',
+                    '¡Eres increíble! Juntas lo lograremos 🎉',
+                    '¡A por todas, campeón/a! 🏆',
+                    '¡Recuerda practicar todos los días! 📚',
+                    '¡Tu racha va genial, no la pierdas! 🔥'
                 ];
                 const msg = saludos[Math.floor(Math.random() * saludos.length)];
                 triggerMascota('exito', msg);
             });
         }
+
+        // Saludo inicial al cargar la página
+        setTimeout(() => {
+            triggerMascota('saludar', '¡Hola! Soy UDECIA, tu compañera 👋');
+        }, 1000);
     }
 
     // Ejecutar cuando el DOM esté listo

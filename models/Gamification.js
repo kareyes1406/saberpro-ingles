@@ -24,6 +24,27 @@ class Gamification {
      * @param {number} activityId
      */
     static async addXP(userId, xpAmount, activityId) {
+        // Check for active XP booster from shop
+        let multiplier = 1;
+        try {
+            const boosterQuery = `
+                SELECT TOP 1 SI.BoostMultiplier
+                FROM UserInventory UI
+                INNER JOIN ShopItems SI ON UI.ItemID = SI.ItemID
+                WHERE UI.UserID = @UserID AND SI.ItemType = 'xp_booster'
+                AND UI.IsUsed = 0 AND (UI.ExpiresAt IS NULL OR UI.ExpiresAt > GETDATE())
+                ORDER BY SI.BoostMultiplier DESC
+            `;
+            const boosterResult = await executeQuery(boosterQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);
+            if (boosterResult.recordset.length > 0) {
+                multiplier = parseFloat(boosterResult.recordset[0].BoostMultiplier) || 1;
+            }
+        } catch (e) {
+            // ShopItems table may not exist yet, ignore
+        }
+
+        const boostedXP = Math.round(xpAmount * multiplier);
+        
         const query = `
             UPDATE UserGamification
             SET TotalXP = ISNULL(TotalXP, 0) + @XPAmount, UpdatedAt = GETDATE()
@@ -36,9 +57,30 @@ class Gamification {
         `;
         const params = [
             { name: 'UserID', type: sql.Int, value: userId },
-            { name: 'XPAmount', type: sql.Int, value: xpAmount }
+            { name: 'XPAmount', type: sql.Int, value: boostedXP }
         ];
         await executeQuery(query, params);
+    }
+
+    /**
+     * Gasta monedas (para compras en la tienda)
+     * @param {number} userId
+     * @param {number} amount
+     */
+    static async spendCoins(userId, amount) {
+        const query = `
+            UPDATE UserGamification 
+            SET TotalCoins = ISNULL(TotalCoins, 0) - @Amount, 
+                CoinsSpent = ISNULL(CoinsSpent, 0) + @Amount, 
+                UpdatedAt = GETDATE()
+            WHERE UserID = @UserID AND ISNULL(TotalCoins, 0) >= @Amount
+        `;
+        const params = [
+            { name: 'UserID', type: sql.Int, value: userId },
+            { name: 'Amount', type: sql.Int, value: amount }
+        ];
+        const result = await executeQuery(query, params);
+        return result.rowsAffected[0] > 0; // Returns false if insufficient coins
     }
 
     /**

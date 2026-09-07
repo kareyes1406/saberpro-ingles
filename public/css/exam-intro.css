@@ -1,0 +1,211 @@
+/* public/css/exam-intro.css */
+
+.exam-intro-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 2rem;
+    color: var(--text-primary);
+}
+
+.intro-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .intro-content {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+/* Mascot Section */
+.mascot-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.udecia-img {
+    width: 250px;
+    max-width: 100%;
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.speech-bubble {
+    background: var(--bg-card);
+    border: 2px solid var(--accent-purple);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.speech-bubble::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 15px 15px 15px;
+    border-style: solid;
+    border-color: transparent transparent var(--accent-purple) transparent;
+}
+
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 13px 13px 13px;
+    border-style: solid;
+    border-color: transparent transparent var(--bg-card) transparent;
+}
+
+.speech-bubble p {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* Exam Details Section */
+.exam-details {
+    flex: 2;
+    background: var(--bg-surface);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.exam-title {
+    color: var(--accent-cyan);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.exam-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.exam-parts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.exam-part-card {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    border-top: 4px solid var(--accent-blue);
+    transition: transform 0.3s ease;
+}
+
+.exam-part-card:hover {
+    transform: translateY(-5px);
+}
+
+.part-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.exam-part-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.exam-part-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.tips-section {
+    background: rgba(124, 58, 237, 0.1);
+    border-left: 4px solid var(--accent-purple);
+    padding: 1.5rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 2.5rem;
+}
+
+.tips-section h3 {
+    margin-top: 0;
+    color: var(--accent-purple);
+    margin-bottom: 1rem;
+}
+
+.tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tips-list li {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.tips-list li:last-child {
+    margin-bottom: 0;
+}
+
+.tip-icon {
+    color: var(--accent-cyan);
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+    width: 20px;
+    text-align: center;
+}
+
+.action-section {
+    text-align: center;
+}
+
+.btn-start-diagnostic {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    color: white;
+    font-size: 1.25rem;
+    font-weight: bold;
+    padding: 1rem 3rem;
+    border-radius: 2rem;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+    transition: all 0.3s ease;
+}
+
+.btn-start-diagnostic:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+    color: white;
+}
+
+.btn-start-diagnostic i {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-start-diagnostic:hover i {
+    transform: translateX(5px);
+}

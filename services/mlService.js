@@ -134,9 +134,11 @@ class MLService {
 
         const distance = (v1, v2) => Math.sqrt(v1.reduce((sum, val, i) => sum + Math.pow(val - v2[i], 2), 0));
 
-        // Inicializar centroides con k estudiantes aleatorios distintos (K-Means++)
-        const shuffled = [...students].sort(() => Math.random() - 0.5);
-        let centroids = shuffled.slice(0, k).map(s => getVector(s));
+        // Inicializar centroides de forma determinística (evitar cambios al recargar página)
+        // Usar K-Means++ simplificado: ordenar por avgScore y tomar equidistantes
+        const sorted = [...students].sort((a, b) => (a.avgScore || 0) - (b.avgScore || 0));
+        const step = Math.max(1, Math.floor(sorted.length / k));
+        let centroids = Array.from({ length: k }, (_, i) => getVector(sorted[Math.min(i * step, sorted.length - 1)]));
 
         let assignments = new Array(students.length).fill(0);
 

@@ -74,6 +74,9 @@ exports.processLogin = async (req, res) => {
         if (roleName === 'admin') {
             return res.redirect('/admin/dashboard');
         }
+        if (roleName === 'professor') {
+            return res.redirect('/professor/dashboard');
+        }
         return res.redirect('/student');
         
     } catch (error) {

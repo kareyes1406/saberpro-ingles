@@ -1,0 +1,127 @@
+<%- include('../partials/admin-header') %>
+
+<div style="max-width: 1100px; margin: 0 auto; padding: 1.5rem;">
+    <div class="page-header" style="margin-bottom: 2rem;">
+        <h1 style="margin: 0; font-size: 1.8rem; color: #fff;">💬 Bandeja de Mensajes de Estudiantes</h1>
+        <p style="margin: 0.5rem 0 0; color: var(--text-secondary, #94a3b8);">Comunícate directamente con los estudiantes que solicitan apoyo o tienen dudas</p>
+    </div>
+
+    <% if (locals.messages && messages.length > 0) { %>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <% messages.forEach(msg => { %>
+                <div class="message-card" id="msg-card-<%= msg.MessageID %>" style="background: var(--bg-card, #1a2235); border: 1px solid <%= msg.IsRead ? 'rgba(255,255,255,0.06)' : 'var(--accent-purple, #7c3aed)' %>; border-radius: 12px; padding: 1.5rem; transition: all 0.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #06b6d4); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white;">
+                                <%= (msg.SenderName || 'E').charAt(0) %>
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.1rem; color: #fff;"><%= msg.SenderName || 'Estudiante' %></h3>
+                                <span style="font-size: 0.8rem; color: #94a3b8;"><%= new Date(msg.CreatedAt).toLocaleString('es-CO') %></span>
+                            </div>
+                        </div>
+                        <div>
+                            <% if (!msg.IsRead) { %>
+                                <span style="background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                    Nuevo
+                                </span>
+                            <% } else { %>
+                                <span style="background: rgba(16,185,129,0.1); color: #10b981; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem;">
+                                    Leído
+                                </span>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <% if (msg.Subject) { %>
+                        <h4 style="margin: 0 0 0.5rem; color: var(--accent-cyan, #06b6d4); font-size: 0.95rem;">Asunto: <%= msg.Subject %></h4>
+                    <% } %>
+
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem;">
+                        <%= msg.MessageText %>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <% if (!msg.IsRead) { %>
+                            <button onclick="markAsRead(<%= msg.MessageID %>)" style="background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                                Marcar como leído
+                            </button>
+                        <% } %>
+                        <button onclick="toggleReplyForm(<%= msg.MessageID %>)" style="background: var(--accent-purple, #7c3aed); color: white; border: none; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                            💬 Responder
+                        </button>
+                    </div>
+
+                    <!-- Formulario de Respuesta (oculto por defecto) -->
+                    <div id="reply-form-<%= msg.MessageID %>" style="display: none; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1rem;">
+                        <textarea id="reply-text-<%= msg.MessageID %>" placeholder="Escribe tu respuesta para <%= msg.SenderName %>..." style="width: 100%; min-height: 80px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 0.75rem; font-family: inherit; font-size: 0.9rem; resize: vertical; box-sizing: border-box;"></textarea>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                            <button onclick="toggleReplyForm(<%= msg.MessageID %>)" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer;">Cancelar</button>
+                            <button onclick="sendReply(<%= msg.MessageID %>, <%= msg.SenderID %>)" style="background: #10b981; color: white; border: none; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Enviar Respuesta</button>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    <% } else { %>
+        <div style="background: var(--bg-card, #1a2235); border: 1px dashed rgba(255,255,255,0.1); border-radius: 16px; padding: 3rem; text-align: center; color: #94a3b8;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+            <h3 style="margin: 0; color: #fff; font-size: 1.3rem;">Bandeja limpia</h3>
+            <p style="margin: 0.5rem 0 0;">No tienes mensajes de estudiantes por el momento.</p>
+        </div>
+    <% } %>
+</div>
+
+<script>
+function toggleReplyForm(msgId) {
+    const form = document.getElementById('reply-form-' + msgId);
+    if (form) {
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+async function markAsRead(msgId) {
+    try {
+        const res = await fetch('/messages/' + msgId + '/read', { method: 'PUT' });
+        if (res.ok) {
+            location.reload();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function sendReply(parentMsgId, studentId) {
+    const textarea = document.getElementById('reply-text-' + parentMsgId);
+    const text = textarea.value.trim();
+    if (!text) {
+        alert('Por favor escribe un mensaje antes de enviar.');
+        return;
+    }
+
+    try {
+        const res = await fetch('/messages/reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                receiverId: studentId,
+                parentId: parentMsgId,
+                text: text,
+                subject: 'Respuesta de Administrador'
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('¡Respuesta enviada con éxito!');
+            location.reload();
+        } else {
+            alert('Error enviando la respuesta.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error de conexión.');
+    }
+}
+</script>
+
+<%- include('../partials/admin-footer') %>

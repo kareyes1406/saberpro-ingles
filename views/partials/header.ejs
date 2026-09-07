@@ -25,16 +25,23 @@
         </div>
         <% if (typeof user !== 'undefined' && user) { %>
         <div class="nav-stats">
-            <div class="xp-bar-container">
+            <div class="xp-bar-container stat-tooltip-wrapper">
                 <div class="xp-bar" id="navXPBar" <%- `style="width: ${typeof studentStats !== 'undefined' ? (studentStats.TotalXP % 100) : 0}%;"` %>></div>
                 <span class="xp-text">Nv. <%= typeof studentStats !== 'undefined' ? studentStats.Level : 1 %> — <%= typeof studentStats !== 'undefined' ? studentStats.TotalXP : 0 %> XP</span>
+                <div class="stat-tooltip">Puntos de experiencia. Los ganas completando actividades. Cada 100 XP subes de nivel.</div>
             </div>
-            <div class="streak-counter">
+            <div class="streak-counter stat-tooltip-wrapper">
                 🔥 <span id="navStreak"><%= typeof studentStats !== 'undefined' ? studentStats.CurrentStreak : 0 %></span>
+                <div class="stat-tooltip">Días consecutivos ingresando a la plataforma. ¡No rompas tu racha!</div>
             </div>
-            <div class="coin-counter">
+            <div class="coin-counter stat-tooltip-wrapper">
                 🪙 <span id="navCoins"><%= typeof studentStats !== 'undefined' ? studentStats.TotalCoins : 0 %></span>
+                <div class="stat-tooltip">Monedas virtuales. Las ganas completando actividades y las gastas en la Tienda.</div>
             </div>
+            <a href="/shop" class="shop-link stat-tooltip-wrapper" style="color: var(--warning-color); text-decoration:none; font-weight:600; font-size:1.2rem; display:flex; align-items:center; gap:0.3rem;">
+                🛒
+                <div class="stat-tooltip">¡Visita la Tienda! Compra potenciadores con tus monedas.</div>
+            </a>
         </div>
         <div class="nav-user" style="position: relative;">
             <button onclick="document.getElementById('userDropdown').style.display = document.getElementById('userDropdown').style.display === 'none' ? 'block' : 'none';" style="background:rgba(6, 182, 212, 0.1); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-weight:600; cursor:pointer; font-size:1rem; display:flex; align-items:center; gap:0.5rem; padding:0.4rem 1rem; border-radius:20px; transition:all 0.2s;">

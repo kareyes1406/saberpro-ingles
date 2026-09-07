@@ -124,7 +124,7 @@ class AIAssistantService {
                 ISNULL(UG.TotalXP, 0) as totalXP,
                 ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
                 ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
-                ISNULL((SELECT MAX(MW.WeekNumber) FROM UserProgress UP2
+                ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
                     INNER JOIN ModuleWeeks MW ON A2.WeekID = MW.WeekID
                     WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as completedWeeks

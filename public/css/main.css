@@ -382,3 +382,60 @@ small { font-size: 0.875rem; color: var(--text-muted); }
   .navbar { flex-direction: column; gap: var(--space-md); padding: var(--space-md); }
   .nav-stats { width: 100%; justify-content: center; flex-wrap: wrap; }
 }
+
+/* ── Tooltip informativo para stats del navbar ────────────────── */
+.stat-tooltip-wrapper {
+  position: relative;
+}
+
+.stat-tooltip {
+  display: none;
+  position: absolute;
+  top: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card, #1a2235);
+  color: #e2e8f0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+  width: max-content;
+  max-width: 220px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.stat-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--bg-card, #1a2235);
+}
+
+.stat-tooltip-wrapper:hover .stat-tooltip {
+  display: block;
+  animation: tooltipFade 0.2s ease;
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.shop-link {
+  transition: all 0.2s ease;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+}
+.shop-link:hover {
+  background: rgba(245, 158, 11, 0.15);
+  transform: scale(1.1);
+}

@@ -1,18 +1,22 @@
     </main>
     
     <footer style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.75rem;">
-        SaberPro Inglés v1.0 — Plataforma de Preparación Gamificada © 2026
+        SaberPro Inglés v2.0 — Plataforma de Preparación Gamificada © 2026
     </footer>
 
-    <!-- Mascota Interactiva (Husky) -->
+    <!-- UDECIA - Compañera de Entrenamiento -->
     <% if (typeof user !== 'undefined' && user) { %>
     <div id="mascotaContainer">
         <div id="mascotaTooltip"></div>
-        <img id="mascotaImg" src="/img/mascota/idle.png" alt="Mascota Husky">
+        <img id="mascotaImg" src="/img/mascota/idle.png" alt="UDECIA - Tu compañera de entrenamiento">
     </div>
+
+    <!-- Chat Flotante con UDECIA y Docentes -->
+    <link rel="stylesheet" href="/css/chat-widget.css">
+    <script src="/js/chat-widget.js?v=<%= Date.now() %>"></script>
     <% } %>
 
-    <!-- Shared Modals & Mascota CSS/JS -->
+    <!-- Shared Modals & UDECIA CSS/JS -->
     <link rel="stylesheet" href="/css/modals.css">
     <script src="/js/mascotaController.js?v=<%= Date.now() %>"></script>
     

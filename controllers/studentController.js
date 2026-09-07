@@ -95,6 +95,26 @@ exports.showRoadmap = async (req, res) => {
     }
 };
 
+exports.showTutorial = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const studentStats = await Gamification.getStudentStats(userId) || {
+            TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0
+        };
+        
+        res.render('student/tutorial', {
+            title: 'Tutorial de la Plataforma',
+            cssFile: 'tutorial.css',
+            jsFile: 'tutorial.js',
+            studentStats,
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('Tutorial Error:', error);
+        res.redirect('/student');
+    }
+};
+
 exports.updateProfile = async (req, res) => {
     try {
         const { firstName, lastName, password } = req.body;

@@ -212,6 +212,10 @@ async function submitUserForm() {
     const password = document.getElementById('formPassword').value;
 
     const data = { firstName, lastName, email, isActive };
+    const roleInput = document.getElementById('formRole');
+    if (roleInput) {
+        data.role = roleInput.value;
+    }
     if (!userId) {
         if (!password) {
             btn.textContent = 'Error: Contraseña obligatoria';

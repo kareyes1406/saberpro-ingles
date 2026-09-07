@@ -63,25 +63,29 @@
   
   <!-- Stats Sidebar -->
   <div class="stats-sidebar">
-    <div class="stat-card">
+    <div class="stat-card stat-tooltip-wrapper">
       <div class="stat-icon">⚡</div>
       <div class="stat-value" id="xpValue"><%= studentStats.TotalXP %></div>
       <div class="stat-label">XP Total</div>
+      <div class="stat-tooltip" style="bottom: auto; top: 100%; left: 50%;">Puntos de experiencia ganados completando actividades.</div>
     </div>
-    <div class="stat-card streak">
+    <div class="stat-card streak stat-tooltip-wrapper">
       <div class="stat-icon">🔥</div>
       <div class="stat-value" id="streakValue"><%= studentStats.CurrentStreak %></div>
       <div class="stat-label">Días de Racha</div>
+      <div class="stat-tooltip" style="bottom: auto; top: 100%; left: 50%;">Días consecutivos practicando. ¡Mantén el hábito diario!</div>
     </div>
-    <div class="stat-card coins">
+    <div class="stat-card coins stat-tooltip-wrapper">
       <div class="stat-icon">🪙</div>
       <div class="stat-value" id="coinsValue"><%= studentStats.TotalCoins %></div>
       <div class="stat-label">Monedas</div>
+      <div class="stat-tooltip" style="bottom: auto; top: 100%; left: 50%;">Monedas virtuales que puedes gastar en la Tienda.</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card stat-tooltip-wrapper">
       <div class="stat-icon">🏅</div>
       <div class="stat-value"><%= studentStats.Level %></div>
       <div class="stat-label">Nivel</div>
+      <div class="stat-tooltip" style="bottom: auto; top: 100%; left: 50%;">Tu nivel actual. Sube de nivel cada 100 puntos de XP.</div>
     </div>
     
     <!-- Badges Section -->

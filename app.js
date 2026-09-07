@@ -19,11 +19,14 @@ const session = require('express-session');
 const flash = require('connect-flash');
 
 // Importar rutas
-const authRoutes    = require('./routes/authRoutes');
-const studentRoutes = require('./routes/studentRoutes');
-const gameRoutes    = require('./routes/gameRoutes');
-const adminRoutes   = require('./routes/adminRoutes');
-const examRoutes    = require('./routes/examRoutes');
+const authRoutes      = require('./routes/authRoutes');
+const studentRoutes   = require('./routes/studentRoutes');
+const gameRoutes      = require('./routes/gameRoutes');
+const adminRoutes     = require('./routes/adminRoutes');
+const examRoutes      = require('./routes/examRoutes');
+const shopRoutes      = require('./routes/shopRoutes');
+const messageRoutes   = require('./routes/messageRoutes');
+const professorRoutes = require('./routes/professorRoutes');
 
 // Conexión a Azure SQL Server
 const { testConnection, executeQuery } = require('./config/database');
@@ -128,6 +131,18 @@ const requireAdmin = (req, res, next) => {
     res.redirect('/auth/login');
 };
 
+/**
+ * requireProfessor - Verifica que el usuario sea profesor
+ * Se aplica a rutas /professor
+ */
+const requireProfessor = (req, res, next) => {
+    if (req.session && req.session.userId && req.session.role === 'professor') {
+        return next();
+    }
+    req.flash('error', 'Acceso restringido a profesores.');
+    res.redirect('/auth/login');
+};
+
 // ── Variables Globales para Vistas ───────────────────────────────────
 // Estas variables están disponibles en TODAS las vistas EJS
 app.use((req, res, next) => {
@@ -146,6 +161,9 @@ app.get('/', (req, res) => {
         if (req.session.role === 'admin') {
             return res.redirect('/admin/dashboard');
         }
+        if (req.session.role === 'professor') {
+            return res.redirect('/professor/dashboard');
+        }
         return res.redirect('/student');
     }
     res.redirect('/auth/login');
@@ -157,6 +175,9 @@ app.use('/student', requireAuth, studentRoutes);
 app.use('/game', requireAuth, gameRoutes);
 app.use('/admin', requireAdmin, adminRoutes);
 app.use('/exam', requireAuth, examRoutes);
+app.use('/shop', requireAuth, shopRoutes);
+app.use('/messages', requireAuth, messageRoutes);
+app.use('/professor', requireProfessor, professorRoutes);
 
 // ── 404 — Página No Encontrada ──────────────────────────────────────
 app.use((req, res) => {
@@ -210,8 +231,70 @@ testConnection()
                     LongestStreak = ISNULL(LongestStreak, 0)
             `);
             console.log('✅ Default values for UserGamification repaired/checked.');
+
+            // Safe auto-initialization with IF NOT EXISTS
+            await executeQuery(`
+                IF NOT EXISTS (SELECT 1 FROM Roles WHERE RoleName = 'professor')
+                BEGIN
+                    INSERT INTO Roles (RoleName, Description) VALUES ('professor', 'Profesor - Lectura de estadísticas estudiantiles');
+                END
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ShopItems' AND xtype='U')
+                BEGIN
+                    CREATE TABLE ShopItems (
+                        ItemID INT IDENTITY(1,1) PRIMARY KEY,
+                        ItemName NVARCHAR(100) NOT NULL,
+                        Description NVARCHAR(500) NOT NULL,
+                        IconEmoji NVARCHAR(10) NOT NULL,
+                        ItemType NVARCHAR(50) CHECK (ItemType IN ('xp_booster','streak_shield','hint_token','cosmetic')),
+                        Price INT NOT NULL,
+                        DurationMinutes INT NULL,
+                        BoostMultiplier DECIMAL(3,1) DEFAULT 1.0,
+                        IsActive BIT DEFAULT 1,
+                        CreatedAt DATETIME DEFAULT GETDATE()
+                    );
+
+                    INSERT INTO ShopItems (ItemName, Description, IconEmoji, ItemType, Price, DurationMinutes, BoostMultiplier)
+                    VALUES 
+                    ('Poción de XP Doble', '¡Duplica tu XP durante 1 hora! Perfecta para sesiones intensivas.', '🧪', 'xp_booster', 50, 60, 2.0),
+                    ('Escudo de Racha', 'Protege tu racha por 24 horas. ¡No pierdas tu progreso!', '🛡️', 'streak_shield', 100, 1440, 1.0),
+                    ('Pista del Sabio', 'Elimina una opción incorrecta en Boss Battle. Úsala sabiamente.', '💡', 'hint_token', 30, NULL, 1.0),
+                    ('Super XP Triple', '¡Triple XP durante 30 minutos! Para los más ambiciosos.', '⚡', 'xp_booster', 150, 30, 3.0);
+                END
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='UserInventory' AND xtype='U')
+                BEGIN
+                    CREATE TABLE UserInventory (
+                        InventoryID INT IDENTITY(1,1) PRIMARY KEY,
+                        UserID INT FOREIGN KEY REFERENCES Users(UserID),
+                        ItemID INT FOREIGN KEY REFERENCES ShopItems(ItemID),
+                        PurchasedAt DATETIME DEFAULT GETDATE(),
+                        ExpiresAt DATETIME NULL,
+                        IsUsed BIT DEFAULT 0,
+                        UsedAt DATETIME NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Messages' AND xtype='U')
+                BEGIN
+                    CREATE TABLE Messages (
+                        MessageID INT IDENTITY(1,1) PRIMARY KEY,
+                        SenderID INT NOT NULL FOREIGN KEY REFERENCES Users(UserID),
+                        ReceiverID INT NULL FOREIGN KEY REFERENCES Users(UserID),
+                        Subject NVARCHAR(200),
+                        MessageText NVARCHAR(MAX) NOT NULL,
+                        IsRead BIT DEFAULT 0,
+                        ParentMessageID INT NULL FOREIGN KEY REFERENCES Messages(MessageID),
+                        CreatedAt DATETIME DEFAULT GETDATE()
+                    );
+
+                    CREATE INDEX IX_Messages_SenderID ON Messages(SenderID);
+                    CREATE INDEX IX_Messages_ReceiverID ON Messages(ReceiverID);
+                END
+            `);
+            console.log('✅ Safe schema check completed (Professor role, Shop, Messages).');
         } catch (e) {
-            console.error('⚠️ Could not repair UserGamification values on startup:', e.message);
+            console.error('⚠️ Could not repair UserGamification or initialize schema on startup:', e.message);
         }
     })
     .catch(err => {
