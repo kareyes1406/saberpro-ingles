@@ -62,14 +62,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Handle use buttons
+    // Handle use buttons (Activar Potenciadores)
     const useButtons = document.querySelectorAll('.btn-use');
     useButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
             const invId = btn.dataset.invId;
-            // Logic to use item - could prompt for confirmation
-            alert('Funcionalidad de uso de item en desarrollo. ID: ' + invId);
-            // Would normally POST to /shop/use/:id
+            if (!invId) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Activando...';
+
+            try {
+                const response = await fetch('/shop/use', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inventoryId: invId })
+                });
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    if (typeof triggerMascota === 'function') {
+                        triggerMascota('exito', '¡Potenciador activado con éxito! ⚡');
+                    }
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert(result.error || 'No se pudo activar el potenciador.');
+                    btn.disabled = false;
+                    btn.textContent = 'Activar';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de conexión al activar el potenciador.');
+                btn.disabled = false;
+                btn.textContent = 'Activar';
+            }
         });
     });
 });

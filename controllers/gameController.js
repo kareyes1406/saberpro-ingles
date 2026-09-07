@@ -7,6 +7,7 @@ const Module = require('../models/Module');
 const Progress = require('../models/Progress');
 const Gamification = require('../models/Gamification');
 const Evaluation = require('../models/Evaluation');
+const Shop = require('../models/Shop');
 const { executeQuery, sql } = require('../config/database');
 
 // Helper to shuffle array
@@ -192,6 +193,7 @@ exports.showReading = async (req, res) => {
         const selectedQuestions = shuffleArray(selectedGroup.questions).slice(0, 7);
         
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
+        const hintTokens = await Shop.getAvailableHints(userId);
         
         // Guardar respuestas correctas en sesión para verificación segura
         const correctAnswers = {};
@@ -205,7 +207,8 @@ exports.showReading = async (req, res) => {
                 Explanation: q.Explanation,
                 Options: q.Options.map(o => ({
                     OptionID: o.OptionID,
-                    OptionText: o.OptionText
+                    OptionText: o.OptionText,
+                    IsCorrect: o.IsCorrect
                 }))
             };
         });
@@ -220,6 +223,7 @@ exports.showReading = async (req, res) => {
             passage: selectedGroup.passage || '',
             passageTitle: selectedGroup.title || '',
             questions: clientQuestions,
+            hintTokens,
             studentStats,
             user: req.session.user
         });
@@ -306,6 +310,7 @@ exports.showPragmatics = async (req, res) => {
         // Obtener 5 preguntas aleatorias del pool
         const questions = await Module.getRandomQuestionsByType(questionType, 5, userId, activityId);
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
+        const hintTokens = await Shop.getAvailableHints(userId);
         
         // Guardar respuestas correctas en sesión
         const correctAnswers = {};
@@ -384,6 +389,7 @@ exports.showPragmatics = async (req, res) => {
             jsFile: 'pragmatics.js',
             activity,
             questions: clientQuestions,
+            hintTokens,
             studentStats,
             user: req.session.user
         });
@@ -579,6 +585,7 @@ exports.showBossBattle = async (req, res) => {
         if (!activity) return res.redirect('/student');
         
         const studentStats = await Gamification.getStudentStats(userId) || { TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0 };
+        const hintTokens = await Shop.getAvailableHints(userId);
         const student = req.session.user;
         
         const weekResult = await executeQuery(
@@ -633,6 +640,7 @@ exports.showBossBattle = async (req, res) => {
             questions: clientQuestions,
             student,
             cutNumber,
+            hintTokens,
             studentStats,
             user: req.session.user
         });
@@ -782,3 +790,72 @@ exports.cheatSkipWeek = async (req, res) => {
         res.status(500).json({ error: 'Error al saltar semana' });
     }
 };
+
+/**
+ * Pista del Sabio: Consume 1 token de pista del inventario y descarta una opción incorrecta
+ */
+exports.useHint = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'No autorizado' });
+        }
+        const { questionId, options } = req.body;
+        
+        // Verificar y consumir 1 pista del inventario
+        const hasHint = await Shop.useHint(userId);
+        if (!hasHint) {
+            return res.status(400).json({
+                success: false,
+                error: 'No tienes Pistas del Sabio disponibles en tu inventario. ¡Puedes comprarlas en la Tienda!'
+            });
+        }
+        
+        // Obtener la respuesta correcta de la sesión
+        let correctOptId = null;
+        if (req.session.bossAnswers && req.session.bossAnswers[questionId] !== undefined) {
+            correctOptId = req.session.bossAnswers[questionId];
+        } else if (req.session.readingAnswers && req.session.readingAnswers[questionId] !== undefined) {
+            correctOptId = req.session.readingAnswers[questionId];
+        } else if (req.session.pragmaticsAnswers && req.session.pragmaticsAnswers[questionId] !== undefined) {
+            correctOptId = req.session.pragmaticsAnswers[questionId];
+        } else if (req.session.grammarAnswers && req.session.grammarAnswers[questionId] !== undefined) {
+            correctOptId = req.session.grammarAnswers[questionId];
+        }
+        
+        // Fallback a base de datos si no está en sesión
+        if (correctOptId === null && questionId) {
+            const result = await executeQuery(
+                'SELECT OptionID FROM QuestionOptions WHERE QuestionID = @QuestionID AND IsCorrect = 1',
+                [{ name: 'QuestionID', type: sql.Int, value: parseInt(questionId) }]
+            );
+            if (result.recordset.length > 0) {
+                correctOptId = result.recordset[0].OptionID;
+            }
+        }
+        
+        // Identificar opciones incorrectas de las opciones enviadas
+        let wrongOptionId = null;
+        if (options && Array.isArray(options)) {
+            const wrongOptions = options
+                .map(id => parseInt(id))
+                .filter(id => id !== correctOptId && !isNaN(id));
+            
+            if (wrongOptions.length > 0) {
+                wrongOptionId = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+            }
+        }
+        
+        const remainingHints = await Shop.getAvailableHints(userId);
+        
+        res.json({
+            success: true,
+            discardedOptionId: wrongOptionId,
+            remainingHints
+        });
+    } catch (error) {
+        console.error('Use Hint Error:', error);
+        res.status(500).json({ success: false, error: 'Error al procesar la Pista del Sabio' });
+    }
+};
+

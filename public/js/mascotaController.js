@@ -218,11 +218,41 @@
             });
         }
 
-        // Saludo inicial al cargar la página
-        setTimeout(() => {
-            triggerMascota('saludar', '¡Hola! Soy UDECIA, tu compañera 👋');
-        }, 1000);
+        // Verificar si el usuario la había minimizado
+        if (localStorage.getItem('udecia_minimized') === 'true') {
+            const c = document.getElementById('mascotaContainer');
+            const r = document.getElementById('mascotaRestoreBtn');
+            if (c) c.style.display = 'none';
+            if (r) r.style.display = 'flex';
+        } else {
+            // Saludo inicial al cargar la página
+            setTimeout(() => {
+                triggerMascota('saludar', '¡Hola! Soy UDECIA, tu compañera 👋');
+            }, 1000);
+        }
     }
+
+    /**
+     * Función global para ocultar / mostrar a UDECIA de forma desplegable
+     */
+    window.toggleMascotaVisibility = function (e) {
+        if (e) e.stopPropagation();
+        const container = document.getElementById('mascotaContainer');
+        const restoreBtn = document.getElementById('mascotaRestoreBtn');
+        if (!container) return;
+
+        const isCurrentlyHidden = (container.style.display === 'none');
+        if (isCurrentlyHidden) {
+            container.style.display = 'block';
+            if (restoreBtn) restoreBtn.style.display = 'none';
+            localStorage.setItem('udecia_minimized', 'false');
+            triggerMascota('saludar', '¡Aquí estoy de nuevo! 👋');
+        } else {
+            container.style.display = 'none';
+            if (restoreBtn) restoreBtn.style.display = 'flex';
+            localStorage.setItem('udecia_minimized', 'true');
+        }
+    };
 
     // Ejecutar cuando el DOM esté listo
     if (document.readyState === 'loading') {

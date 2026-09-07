@@ -32,7 +32,7 @@ class Gamification {
                 FROM UserInventory UI
                 INNER JOIN ShopItems SI ON UI.ItemID = SI.ItemID
                 WHERE UI.UserID = @UserID AND SI.ItemType = 'xp_booster'
-                AND UI.IsUsed = 0 AND (UI.ExpiresAt IS NULL OR UI.ExpiresAt > GETDATE())
+                AND UI.IsUsed = 1 AND (UI.ExpiresAt IS NULL OR UI.ExpiresAt > GETDATE())
                 ORDER BY SI.BoostMultiplier DESC
             `;
             const boosterResult = await executeQuery(boosterQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);

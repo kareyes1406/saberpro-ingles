@@ -64,10 +64,20 @@
             <% inventory.forEach(inv => { %>
                 <% 
                     const isExpired = inv.ExpiresAt && new Date(inv.ExpiresAt) < new Date();
-                    let statusLabel = 'Activo';
-                    let statusColor = '#10b981';
-                    if (inv.IsUsed) { statusLabel = 'Usado'; statusColor = '#94a3b8'; }
-                    else if (isExpired) { statusLabel = 'Expirado'; statusColor = '#ef4444'; }
+                    const isActive = inv.IsUsed && inv.ExpiresAt && !isExpired;
+                    let statusLabel = 'En Mochila';
+                    let statusColor = '#3b82f6';
+                    
+                    if (isActive) {
+                        statusLabel = '🟢 Activo (' + new Date(inv.ExpiresAt).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'}) + ')';
+                        statusColor = '#10b981';
+                    } else if (inv.IsUsed) {
+                        statusLabel = 'Consumido';
+                        statusColor = '#94a3b8';
+                    } else if (inv.ItemType === 'hint_token') {
+                        statusLabel = '💡 Listo para Combates';
+                        statusColor = '#f59e0b';
+                    }
                 %>
                 <div class="inventory-item" style="background: var(--bg-card, #1a2235); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 1rem;">
@@ -76,16 +86,21 @@
                             <h4 style="margin: 0; color: #fff; font-size: 1.05rem;"><%= inv.ItemName %></h4>
                             <p style="margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.8rem;">
                                 Comprado: <%= new Date(inv.PurchasedAt).toLocaleDateString('es-CO') %>
-                                <% if (inv.ExpiresAt && !inv.IsUsed) { %>
-                                    • Expira: <%= new Date(inv.ExpiresAt).toLocaleString('es-CO') %>
+                                <% if (isActive) { %>
+                                    • <span style="color: #10b981; font-weight: 600;">Expira a las <%= new Date(inv.ExpiresAt).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'}) %></span>
                                 <% } %>
                             </p>
                         </div>
                     </div>
-                    <div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <span style="background: <%= statusColor %>22; color: <%= statusColor %>; border: 1px solid <%= statusColor %>44; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
                             <%= statusLabel %>
                         </span>
+                        <% if (!inv.IsUsed && (inv.ItemType === 'xp_booster' || inv.ItemType === 'streak_shield')) { %>
+                            <button class="btn-use" data-inv-id="<%= inv.InventoryID %>" style="background: linear-gradient(135deg, #7c3aed, #06b6d4); color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: transform 0.2s;">
+                                Activar
+                            </button>
+                        <% } %>
                     </div>
                 </div>
             <% }); %>

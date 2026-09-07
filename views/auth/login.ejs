@@ -121,38 +121,61 @@
             animation-delay: -5s;
         }
 
-        .mascot-slideshow {
+        /* Static UDECIA Mascot Presentation */
+        .udecia-static-container {
             position: absolute;
-            bottom: -50px;
-            right: 0px;
-            width: 800px;
-            height: 800px;
-            z-index: 1;
+            bottom: 20px;
+            right: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 3;
             pointer-events: none;
         }
 
-        .login-mascot {
-            position: absolute;
-            bottom: 0;
-            right: 20px;
-            width: 800px;
-            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
-            opacity: 0;
-            animation: mascotCycle 25s infinite;
+        .udecia-speech-bubble {
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid var(--cyan);
+            border-radius: 16px;
+            padding: 0.85rem 1.25rem;
+            max-width: 260px;
+            color: #f1f5f9;
+            font-size: 0.92rem;
+            line-height: 1.45;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            margin-bottom: 0.75rem;
+            position: relative;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            animation: floatBubble 4s ease-in-out infinite;
         }
-        
-        .skin-1 { animation-delay: 0s; }
-        .skin-2 { animation-delay: 5s; }
-        .skin-3 { animation-delay: 10s; }
-        .skin-4 { animation-delay: 15s; }
-        .skin-5 { animation-delay: 20s; }
-        
-        @keyframes mascotCycle {
-            0% { opacity: 0; transform: translateY(20px); }
-            4% { opacity: 0.95; transform: translateY(0); }
-            16% { opacity: 0.95; transform: translateY(0); }
-            20% { opacity: 0; transform: translateY(-20px); }
-            100% { opacity: 0; transform: translateY(-20px); }
+
+        .udecia-speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px 8px 0;
+            border-style: solid;
+            border-color: var(--cyan) transparent transparent;
+        }
+
+        .udecia-speech-bubble p {
+            margin: 0;
+        }
+
+        .udecia-static-img {
+            max-height: 340px;
+            width: auto;
+            max-width: 280px;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
+        }
+
+        @keyframes floatBubble {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
         }
 
         /* Right Panel - Form */
@@ -359,13 +382,12 @@
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
         
-        <!-- UDECIA Mascot Slideshow -->
-        <div class="mascot-slideshow">
-            <img src="/img/mascota/saludar.png" alt="UDECIA Saluda" class="login-mascot skin-1" />
-            <img src="/img/mascota/explicar1.png" alt="UDECIA Explica" class="login-mascot skin-2" />
-            <img src="/img/mascota/celebrar1.png" alt="UDECIA Celebra" class="login-mascot skin-3" />
-            <img src="/img/mascota/pensar1.png" alt="UDECIA Piensa" class="login-mascot skin-4" />
-            <img src="/img/mascota/idle.png" alt="UDECIA Quieta" class="login-mascot skin-5" />
+        <!-- UDECIA Static Character with Greeting -->
+        <div class="udecia-static-container">
+            <div class="udecia-speech-bubble">
+                <p>¡Hola! Soy <strong>UDECIA</strong> 👋<br>Tu compañera de entrenamiento. ¡Vamos a prepararnos juntos!</p>
+            </div>
+            <img src="/img/mascota/saludar.png" alt="UDECIA" class="udecia-static-img" />
         </div>
         
         <div class="promo-content">

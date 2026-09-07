@@ -18,6 +18,9 @@
             <div class="stat-badge level-badge">
                 <span class="icon">🏆</span> Nvl <span id="levelCounter"><%= studentStats.Level %></span>
             </div>
+            <button type="button" id="btnHintToken" class="stat-badge hint-badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; cursor: pointer; border-radius: 8px; padding: 0.35rem 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;" title="Descartar una opción incorrecta">
+                <span>💡 Pista (<span id="hintCountBadge"><%= typeof hintTokens !== 'undefined' ? hintTokens : 0 %></span>)</span>
+            </button>
         </div>
     </div>
 

@@ -31,6 +31,7 @@ router.post('/grammar/submit', gameController.submitGrammar);
 router.get('/boss/:activityId', gameController.showBossBattle);
 router.post('/boss/submit', gameController.submitBossBattle);
 router.post('/boss/check-answer', gameController.checkBossAnswer);
+router.post('/use-hint', gameController.useHint);
 
 router.post('/xp/award', gameController.awardXP);
 router.get('/progress/:moduleId', gameController.getModuleProgress);

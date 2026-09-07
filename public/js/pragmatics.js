@@ -9,6 +9,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const answers = {};
     const startTime = Date.now();
 
+    const btnHintToken = document.getElementById('btnHintToken');
+    const hintCountBadge = document.getElementById('hintCountBadge');
+    let hintsRemaining = parseInt(hintCountBadge ? hintCountBadge.textContent : '0') || 0;
+
+    if (btnHintToken) {
+        btnHintToken.onclick = async () => {
+            if (hintsRemaining <= 0) {
+                if (typeof triggerMascota === 'function') {
+                    triggerMascota('pensar1', 'No te quedan Pistas del Sabio. ¡Puedes comprar más en la Tienda 🛒!');
+                } else {
+                    alert('No tienes Pistas del Sabio disponibles en tu inventario. ¡Puedes comprarlas en la Tienda!');
+                }
+                return;
+            }
+
+            const currentButtons = Array.from(document.querySelectorAll('.option-btn:not([disabled])'));
+            if (currentButtons.length <= 2) {
+                if (typeof triggerMascota === 'function') {
+                    triggerMascota('pensar1', '¡Solo quedan 2 opciones! Debes elegir una tú mismo 🎯');
+                }
+                return;
+            }
+
+            const currentOptionIds = currentButtons.map(b => b.dataset.optionId);
+            const q = questionsData[currentIndex];
+            const qId = q.QuestionID || q.id;
+
+            btnHintToken.disabled = true;
+            btnHintToken.style.opacity = '0.6';
+
+            try {
+                const res = await fetch('/game/use-hint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        questionId: qId,
+                        options: currentOptionIds
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.discardedOptionId) {
+                    hintsRemaining = data.remainingHints;
+                    if (hintCountBadge) hintCountBadge.textContent = hintsRemaining;
+
+                    const targetBtn = document.querySelector(`.option-btn[data-option-id="${data.discardedOptionId}"]`);
+                    if (targetBtn) {
+                        targetBtn.disabled = true;
+                        targetBtn.style.opacity = '0.35';
+                        targetBtn.style.textDecoration = 'line-through';
+                        targetBtn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                        targetBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+                        targetBtn.style.cursor = 'not-allowed';
+                    }
+
+                    if (typeof triggerMascota === 'function') {
+                        triggerMascota('explicar1', '¡Pista del Sabio! He descartado una opción incorrecta 💡');
+                    }
+                } else {
+                    alert(data.error || 'No se pudo aplicar la pista');
+                }
+            } catch (err) {
+                console.error('Error using hint:', err);
+            } finally {
+                btnHintToken.disabled = false;
+                btnHintToken.style.opacity = '1';
+            }
+        };
+    }
+
     function renderQuestion() {
         if (!questionsData || questionsData.length === 0) return;
         const q = questionsData[currentIndex];

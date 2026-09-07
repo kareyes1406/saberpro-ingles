@@ -1,10 +1,18 @@
 /* public/css/chat-widget.css */
 .chat-widget-wrapper {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
+    bottom: 25px;
+    right: 250px;
+    z-index: 1050;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+@media (max-width: 768px) {
+    .chat-widget-wrapper {
+        right: auto;
+        left: 20px;
+        bottom: 20px;
+    }
 }
 
 .chat-toggle-btn {

@@ -4,14 +4,20 @@
         SaberPro Inglés v2.0 — Plataforma de Preparación Gamificada © 2026
     </footer>
 
-    <!-- UDECIA - Compañera de Entrenamiento -->
+    <!-- UDECIA - Compañera de Entrenamiento (Desplegable / Minimizables) -->
     <% if (typeof user !== 'undefined' && user) { %>
     <div id="mascotaContainer">
         <div id="mascotaTooltip"></div>
+        <button id="mascotaToggleBtn" class="mascota-toggle-btn" title="Minimizar / Ocultar a UDECIA" onclick="toggleMascotaVisibility(event)">✕</button>
         <img id="mascotaImg" src="/img/mascota/idle.png" alt="UDECIA - Tu compañera de entrenamiento">
     </div>
 
-    <!-- Chat Flotante con UDECIA y Docentes -->
+    <!-- Botón desplegable para mostrar a UDECIA cuando esté oculta -->
+    <button id="mascotaRestoreBtn" class="mascota-restore-btn" title="Mostrar a UDECIA" onclick="toggleMascotaVisibility(event)" style="display: none;">
+        👩‍🦰 UDECIA
+    </button>
+
+    <!-- Chat Flotante con UDECIA y Docentes (Posicionado a un lado para no solaparse) -->
     <link rel="stylesheet" href="/css/chat-widget.css">
     <script src="/js/chat-widget.js?v=<%= Date.now() %>"></script>
     <% } %>

@@ -40,6 +40,23 @@ class ShopController {
         }
     }
 
+    async useItem(req, res) {
+        try {
+            const userId = req.session.userId || req.session.user?.UserID;
+            const { inventoryId } = req.body;
+
+            if (!inventoryId) {
+                return res.status(400).json({ success: false, error: 'ID de inventario requerido' });
+            }
+
+            await Shop.useItem(parseInt(inventoryId, 10), userId);
+            res.json({ success: true, message: '¡Habilidad activada con éxito!' });
+        } catch (error) {
+            console.error('Error in useItem:', error);
+            res.status(400).json({ success: false, error: error.message || 'Error al usar ítem' });
+        }
+    }
+
     async getInventory(req, res) {
         try {
             const userId = req.session.userId || req.session.user?.UserID;
