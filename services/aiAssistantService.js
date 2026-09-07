@@ -114,7 +114,15 @@ class AIAssistantService {
             ORDER BY MW.WeekNumber
         `, [{ name: 'UserID', type: sql.Int, value: userId }]);
         
-        const weekData = weeklyProgress.recordset.map(w => ({ x: w.WeekNumber, y: parseFloat(w.AvgScore) }));
+        const weekData = [];
+        if (preTest && preTest.TotalScore !== null && preTest.TotalScore !== undefined) {
+            weekData.push({ x: 0, y: parseFloat(preTest.TotalScore) });
+        }
+        weeklyProgress.recordset.forEach(w => {
+            if (w.AvgScore !== null && w.AvgScore !== undefined) {
+                weekData.push({ x: w.WeekNumber, y: parseFloat(w.AvgScore) });
+            }
+        });
         const linearResult = MLService.linearRegression(weekData);
         const projectedSaberPro = Math.round((linearResult.projectedScore / 100) * 300) || Math.round((averageCurrentScore / 100) * 300);
 
@@ -122,7 +130,10 @@ class AIAssistantService {
         const studentsForCluster = await executeQuery(`
             SELECT U.UserID,
                 ISNULL(UG.TotalXP, 0) as totalXP,
-                ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
+                ISNULL(
+                    (SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1),
+                    ISNULL((SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC), 0)
+                ) as avgScore,
                 ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
                 ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
@@ -212,6 +223,12 @@ class AIAssistantService {
             reportText,
             radarData,
             projectedScore: projectedSaberPro,
+            probability: logisticResult.probability,
+            logisticResult,
+            linearResult,
+            gamifiedRank,
+            clusterInfo: thisStudentCluster,
+            percentiles,
             strengths: [],
             weaknesses: []
         };

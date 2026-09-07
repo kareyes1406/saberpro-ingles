@@ -90,58 +90,50 @@
   <div class="table-header-actions">
     <h2>Listado de Estudiantes</h2>
     <div style="display:flex;gap:0.5rem;align-items:center;">
-      <input type="text" id="searchUsers" placeholder="🔍 Buscar estudiante..." class="form-control" style="width:220px;">
+      <input type="text" id="searchUsers" placeholder="🔍 Buscar estudiante..." class="form-control" style="width:200px;">
+      <button onclick="exportToCSV()" class="btn-secondary" style="background:#06b6d4; color:white; border:none; border-radius:6px; padding:0.4rem 0.8rem; font-weight:600; cursor:pointer;">📥 CSV</button>
+      <button onclick="exportDashboardPDF()" class="btn-secondary" style="background:#ef4444; color:white; border:none; border-radius:6px; padding:0.4rem 0.8rem; font-weight:600; cursor:pointer;">📄 PDF Informe</button>
     </div>
   </div>
   <div class="accordion-list" id="usersList">
     <% users.forEach(student => { %>
-      <div class="accordion-item" data-name="<%= (student.FirstName + ' ' + student.LastName).toLowerCase() %>" data-email="<%= student.Email.toLowerCase() %>">
-        <div class="accordion-header" onclick="toggleAccordion(this)">
-          <div class="user-meta">
-            <div class="user-avatar"><%= student.FirstName.charAt(0) %><%= student.LastName.charAt(0) %></div>
-            <div class="user-info">
-              <span class="user-name"><%= student.FirstName %> <%= student.LastName %></span>
-              <span class="user-email"><%= student.Email %></span>
-            </div>
+      <details class="user-accordion" data-user-id="<%= student.UserID %>">
+        <summary class="user-summary">
+          <div class="user-main-info">
+            <strong><%= student.FirstName %> <%= student.LastName %></strong>
+            <span class="badge-pill <%= student.IsActive ? 'active' : 'inactive' %>">
+              <%= student.IsActive ? 'Activo' : 'Inactivo' %>
+            </span>
           </div>
-          <div class="user-quick-stats">
-            <span class="badge" style="background:rgba(6,182,212,0.1);color:var(--accent-cyan);">Semana <%= student.CurrentWeek || 1 %></span>
-            <span class="badge" style="background:rgba(245,158,11,0.1);color:var(--accent-gold);">Nv. <%= student.Level %></span>
-            <span class="badge" style="background:rgba(124,58,237,0.1);color:var(--accent-purple);"><%= student.TotalXP %> XP</span>
-            <span class="badge" style="background:rgba(239,68,68,0.1);color:#f97316;">🔥 <%= student.CurrentStreak %></span>
+          <div class="user-sub-info">
+            <small><%= student.Email %></small>
+            <small>Semana <%= student.CurrentWeek || 1 %> — <%= student.CurrentActivity || 'Sin actividad reciente' %></small>
           </div>
-          <div class="accordion-actions" onclick="event.stopPropagation()">
-            <a href="/professor/students/<%= student.UserID %>/detail" class="btn-icon" title="Ver Analítica y Predicciones" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-weight:600; display:flex; align-items:center; gap:0.3rem;">
-              👁️ Ver Análisis
+          <div class="user-quick-stats" style="margin-left:auto; display:flex; gap:0.5rem; align-items:center;">
+            <span class="badge" style="background:rgba(245,158,11,0.15); color:var(--accent-gold); padding:2px 8px; border-radius:6px; font-size:0.8rem; font-weight:600;">Nv. <%= student.Level %></span>
+            <span class="badge" style="background:rgba(124,58,237,0.15); color:var(--accent-purple); padding:2px 8px; border-radius:6px; font-size:0.8rem; font-weight:600;"><%= student.TotalXP %> XP</span>
+            <span class="badge" style="background:rgba(239,68,68,0.15); color:#f97316; padding:2px 8px; border-radius:6px; font-size:0.8rem; font-weight:600;">🔥 <%= student.CurrentStreak %> d</span>
+          </div>
+        </summary>
+        <div class="user-details-content">
+          <div class="user-stats" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:0.75rem; background:rgba(0,0,0,0.2); padding:0.75rem; border-radius:8px; margin-bottom:1rem;">
+            <div><strong>ID:</strong> <%= student.UserID %></div>
+            <div><strong>Pre-Test:</strong> <%= student.PreTestScore !== null && student.PreTestScore !== undefined ? Math.round(student.PreTestScore) + '%' : 'Pendiente' %></div>
+            <div><strong>Promedio:</strong> <%= student.AvgScore !== null && student.AvgScore !== undefined ? Math.round(student.AvgScore) + '%' : '0%' %></div>
+            <div><strong>Actividades:</strong> <%= student.CompletedCount || 0 %> completadas</div>
+            <div><strong>Proyección Saber Pro:</strong> 🎯 <%= Math.round(((student.AvgScore || 0) / 100) * 300) %> / 300 pts</div>
+            <div><strong>Último Acceso:</strong> <%= student.LastLoginAt ? new Date(student.LastLoginAt).toLocaleDateString('es-CO') : 'Nunca' %></div>
+          </div>
+          <div class="action-btns" style="display:flex; justify-content:flex-end;">
+            <a href="/professor/students/<%= student.UserID %>/detail" class="btn-icon" title="Ver Analítica y Predicciones" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight:600; display:inline-flex; align-items:center; gap:0.4rem; border:1px solid rgba(6,182,212,0.3);">
+              👁️ Ver Análisis Completo y Modelos IA →
             </a>
           </div>
         </div>
-      </div>
+      </details>
     <% }); %>
   </div>
 </div>
-</div>
-
-<script>
-// Accordion Toggle
-function toggleAccordion(header) {
-  const item = header.parentElement;
-  item.classList.toggle('open');
-}
-
-// Búsqueda en tiempo real
-document.getElementById('searchUsers').addEventListener('input', function(e) {
-  const query = e.target.value.toLowerCase().trim();
-  document.querySelectorAll('#usersList .accordion-item').forEach(item => {
-    const name = item.dataset.name;
-    const email = item.dataset.email;
-    if (name.includes(query) || email.includes(query)) {
-      item.style.display = 'block';
-    } else {
-      item.style.display = 'none';
-    }
-  });
-});
-</script>
+</div> <!-- End pdf-content -->
 
 <%- include('../partials/admin-footer') %>

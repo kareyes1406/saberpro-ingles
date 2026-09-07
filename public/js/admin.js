@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Chart.js Initialization ────────────────────────────────
 async function loadCharts() {
     try {
-        const response = await fetch('/admin/kpis/data');
+        const kpiUrl = window.location.pathname.startsWith('/professor') ? '/professor/kpis/data' : '/admin/kpis/data';
+        const response = await fetch(kpiUrl);
         const data = await response.json();
         
         // 1. Completion Rate per Week (Line Chart)
@@ -130,6 +131,144 @@ async function loadCharts() {
                     plugins: { legend: { labels: { color: '#f8fafc' } } }
                 }
             });
+        }
+
+        // 5. Pre-Test vs Módulos (Grouped Bar Chart)
+        const preVsCtx = document.getElementById('preVsModuleChart');
+        if (preVsCtx && data.preTestAvgs) {
+            const preAvgs = data.preTestAvgs || {};
+            const moduleMap = {};
+            (data.moduleAvgs || []).forEach(m => { moduleMap[m.TypeName] = parseFloat(m.AvgScore || 0); });
+
+            new Chart(preVsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Vocabulario', 'Comprensión Lectora', 'Pragmática', 'Gramática'],
+                    datasets: [
+                        {
+                            label: 'Pre-Test',
+                            data: [
+                                Math.round(preAvgs.AvgVocab || 0),
+                                Math.round(preAvgs.AvgReading || 0),
+                                Math.round(preAvgs.AvgPragmatics || 0),
+                                Math.round(preAvgs.AvgGrammar || 0)
+                            ],
+                            backgroundColor: 'rgba(124, 58, 237, 0.6)',
+                            borderColor: 'rgba(124, 58, 237, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Módulos (Promedio Actual)',
+                            data: [
+                                Math.round(moduleMap['Vocabulary'] || 0),
+                                Math.round(moduleMap['Reading'] || 0),
+                                Math.round(moduleMap['Pragmatics'] || 0),
+                                Math.round(moduleMap['Grammar'] || 0)
+                            ],
+                            backgroundColor: 'rgba(6, 182, 212, 0.6)',
+                            borderColor: 'rgba(6, 182, 212, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { min: 0, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        // 6. XP Level Distribution (Doughnut Chart)
+        const lvlCtx = document.getElementById('levelDistChart');
+        if (lvlCtx && data.xpDistribution) {
+            const xpDist = data.xpDistribution || [];
+            const COLORS = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#0ea5e9'];
+            new Chart(lvlCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: xpDist.map(l => `Nivel ${l.Level}`),
+                    datasets: [{
+                        data: xpDist.map(l => l.StudentCount),
+                        backgroundColor: xpDist.map((_, i) => COLORS[i % COLORS.length]),
+                        borderWidth: 2,
+                        borderColor: '#0f1628'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } }
+                    }
+                }
+            });
+        }
+
+        // 7. Top 10 Students by XP (Horizontal Bar Chart)
+        const topCtx = document.getElementById('topStudentsChart');
+        if (topCtx && data.topStudents) {
+            const topS = data.topStudents || [];
+            new Chart(topCtx, {
+                type: 'bar',
+                data: {
+                    labels: topS.map(s => s.FullName),
+                    datasets: [{
+                        label: 'XP Total',
+                        data: topS.map(s => s.TotalXP),
+                        backgroundColor: topS.map((_, i) => i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : 'rgba(124, 58, 237, 0.6)'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // 8. K-Means Cluster (Pie Chart)
+        const clCtx = document.getElementById('clusterChart');
+        if (clCtx && data.clusterSummary) {
+            const clusters = data.clusterSummary || [];
+            new Chart(clCtx, {
+                type: 'pie',
+                data: {
+                    labels: clusters.map(c => c.name),
+                    datasets: [{
+                        data: clusters.map(c => c.count),
+                        backgroundColor: clusters.map(c => (c.color || '#6b7280') + 'cc'),
+                        borderColor: clusters.map(c => c.color || '#6b7280'),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } } }
+                }
+            });
+
+            // Cluster legend cards
+            const clusterLegend = document.getElementById('clusterLegend');
+            if (clusterLegend && clusters.length > 0) {
+                clusterLegend.innerHTML = clusters.map(c => `
+                    <div style="display:inline-block; margin:0.25rem; padding:0.5rem 0.75rem; background:${c.color}22; border:1px solid ${c.color}; border-radius:8px; font-size:0.8rem;">
+                        <span style="color:${c.color}; font-weight:700;">${c.name}</span>
+                        <span style="color:#94a3b8; margin-left:0.5rem;">${c.count} est. (${c.avgScore}% prom. | ${c.avgXP} XP)</span>
+                    </div>
+                `).join('');
+            }
         }
     } catch (error) {
         console.error('Error loading charts:', error);

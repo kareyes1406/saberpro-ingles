@@ -59,18 +59,50 @@
         </div>
     </div>
 
+    <!-- AI Predictions Highlights -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.5rem; margin-bottom: 2rem;">
+        <!-- Proyección Saber Pro -->
+        <div style="background:linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15)); border:1px solid rgba(124,58,237,0.3); border-radius:14px; padding:1.5rem; text-align:center; position:relative; overflow:hidden;">
+            <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-secondary); font-weight:700; letter-spacing:0.5px;">🎯 Proyección Saber Pro</div>
+            <div style="font-size:2.4rem; font-weight:900; color:var(--accent-cyan); margin:0.4rem 0;">
+                <%= aiReport.projectedScore || 0 %> <span style="font-size:1.1rem; color:var(--text-secondary); font-weight:500;">/ 300 pts</span>
+            </div>
+            <div style="font-size:0.8rem; color:#a78bfa;">Tendencia proyectada al examen final</div>
+        </div>
+
+        <!-- Probabilidad de Aprobación -->
+        <div style="background:rgba(255,255,255,0.02); border:1px solid <%= (aiReport.probability || 0) >= 60 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' %>; border-radius:14px; padding:1.5rem; text-align:center;">
+            <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-secondary); font-weight:700; letter-spacing:0.5px;">📊 Probabilidad de Aprobación</div>
+            <div style="font-size:2.4rem; font-weight:900; color:<%= (aiReport.probability || 0) >= 60 ? '#10b981' : '#ef4444' %>; margin:0.4rem 0;">
+                <%= aiReport.probability || 0 %>%
+            </div>
+            <div style="font-size:0.8rem; color:<%= (aiReport.probability || 0) >= 60 ? '#10b981' : '#ef4444' %>;">
+                <%= (aiReport.probability || 0) >= 60 ? '✅ En camino a superar la prueba' : '⚠️ Requiere reforzar entrenamiento' %>
+            </div>
+        </div>
+
+        <!-- Rango de Desempeño IA -->
+        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(245,158,11,0.3); border-radius:14px; padding:1.5rem; text-align:center;">
+            <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-secondary); font-weight:700; letter-spacing:0.5px;">🎖️ Rango de Aprendizaje IA</div>
+            <div style="font-size:1.35rem; font-weight:800; color:var(--accent-gold); margin:0.75rem 0 0.4rem;">
+                <%= aiReport.gamifiedRank || 'Explorador de Saberes 🧭' %>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">Clasificación por Machine Learning</div>
+        </div>
+    </div>
+
     <!-- AI Assistant Panel -->
     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:2rem; margin-bottom: 2.5rem; display: flex; flex-direction: row; gap: 2rem; flex-wrap: wrap; align-items: center;">
         <div style="flex: 1; min-width: 300px; position: relative;">
             <h2 style="margin-top:0; color: var(--accent-blue); display:flex; align-items:center; gap:0.5rem; margin-bottom: 1.5rem;">
-                🤖 Asistente
+                🤖 Diagnóstico de UDECIA con IA
             </h2>
             
-            <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
-                
+            <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+                <img src="/img/mascota/explicar1.png" alt="UDECIA" style="width:68px; height:68px; object-fit:contain; flex-shrink:0; border-radius:50%; background:rgba(124,58,237,0.15); border:2px solid var(--accent-purple); padding:3px; box-shadow:0 0 15px rgba(124,58,237,0.3);">
                 <!-- AI Message Container -->
                 <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: 16px; border: 2px solid var(--accent-purple); flex: 1; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);">
-                    <p style="font-size: 1.1rem; line-height: 1.6; color: var(--text-primary); margin: 0;">
+                    <p style="font-size: 1.05rem; line-height: 1.6; color: var(--text-primary); margin: 0;">
                         <%- aiReport.reportText.replace(/\n/g, '<br>') %>
                     </p>
                 </div>

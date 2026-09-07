@@ -37,6 +37,61 @@
     </div>
     <div class="kpi-icon" style="background:rgba(245,158,11,0.1);color:var(--color-gold);">⏱️</div>
   </div>
+  <div class="kpi-card" style="border-color:<%= (typeof unreadMessagesCount !== 'undefined' && unreadMessagesCount > 0) ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.05)' %>;">
+    <div class="kpi-info">
+      <h3>Mensajes Sin Leer</h3>
+      <div class="kpi-value" style="color:<%= (typeof unreadMessagesCount !== 'undefined' && unreadMessagesCount > 0) ? '#ef4444' : '#10b981' %>;"><%= typeof unreadMessagesCount !== 'undefined' ? unreadMessagesCount : 0 %></div>
+    </div>
+    <div class="kpi-icon" style="background:rgba(6,182,212,0.1);color:var(--accent-cyan);">💬</div>
+  </div>
+</div>
+
+<!-- Mensajes Recientes Section -->
+<div style="background: var(--bg-card); border: 1px solid <%= (typeof unreadMessagesCount !== 'undefined' && unreadMessagesCount > 0) ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.06)' %>; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: var(--space-xl); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+      <span style="font-size:1.4rem;">💬</span>
+      <h3 style="margin:0; font-size:1.1rem; color:#fff;">Mensajes Recientes de Estudiantes</h3>
+      <% if (typeof unreadMessagesCount !== 'undefined' && unreadMessagesCount > 0) { %>
+        <span style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">
+          <%= unreadMessagesCount %> pendiente<%= unreadMessagesCount > 1 ? 's' : '' %>
+        </span>
+      <% } %>
+    </div>
+    <a href="/messages/admin" style="background:var(--accent-purple); color:white; text-decoration:none; padding:0.35rem 0.85rem; border-radius:6px; font-size:0.85rem; font-weight:600; display:inline-flex; align-items:center; gap:0.4rem;">
+      Ver Todos los Mensajes →
+    </a>
+  </div>
+
+  <% if (typeof recentMessages !== 'undefined' && recentMessages.length > 0) { %>
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+      <% recentMessages.forEach(msg => { %>
+        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:0.85rem 1rem; border-left:3px solid <%= msg.IsRead ? '#64748b' : '#ef4444' %>; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div style="flex:1; min-width:240px;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <strong style="color:#f8fafc; font-size:0.95rem;"><%= msg.SenderName || 'Estudiante' %></strong>
+              <span style="color:#94a3b8; font-size:0.8rem;"><%= new Date(msg.CreatedAt).toLocaleString('es-CO') %></span>
+              <% if (!msg.IsRead) { %>
+                <span style="background:rgba(239,68,68,0.2); color:#ef4444; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:6px;">NUEVO</span>
+              <% } %>
+            </div>
+            <p style="margin:0.25rem 0 0; color:#cbd5e1; font-size:0.88rem; line-height:1.4;">
+              <%= msg.MessageText.length > 120 ? msg.MessageText.substring(0, 120) + '...' : msg.MessageText %>
+            </p>
+          </div>
+          <div>
+            <a href="/messages/admin" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; padding:0.35rem 0.75rem; border-radius:6px; font-size:0.8rem; font-weight:600;">
+              Responder
+            </a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <p style="margin:0; color:var(--text-secondary); font-size:0.9rem;">
+      No hay mensajes pendientes por responder. ¡Todo al día! ✨
+    </p>
+  <% } %>
 </div>
 
 <!-- ORIGINAL Charts Row 1 -->
@@ -262,147 +317,8 @@
   </div>
 </div>
 
-<!-- Extra JS for new charts -->
-<script>
-// Extend existing admin.js chart loading with new charts
-document.addEventListener('DOMContentLoaded', async () => {
-    // Wait for the original admin.js kpis fetch (it fetches /admin/kpis/data)
-    // We will piggyback here with our own fetch
-    try {
-        const res = await fetch('/admin/kpis/data');
-        const data = await res.json();
 
-        // --- CHART 5: Pre-Test vs Módulos (Grouped Bar) ---
-        const preAvgs = data.preTestAvgs || {};
-        const moduleMap = {};
-        (data.moduleAvgs || []).forEach(m => { moduleMap[m.TypeName] = parseFloat(m.AvgScore || 0); });
 
-        const preVsCtx = document.getElementById('preVsModuleChart').getContext('2d');
-        new Chart(preVsCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Vocabulario', 'Comprensión Lectora', 'Pragmática', 'Gramática'],
-                datasets: [
-                    {
-                        label: 'Pre-Test',
-                        data: [
-                            Math.round(preAvgs.AvgVocab || 0),
-                            Math.round(preAvgs.AvgReading || 0),
-                            Math.round(preAvgs.AvgPragmatics || 0),
-                            Math.round(preAvgs.AvgGrammar || 0)
-                        ],
-                        backgroundColor: 'rgba(124, 58, 237, 0.6)',
-                        borderColor: 'rgba(124, 58, 237, 1)',
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Módulos (Promedio Actual)',
-                        data: [
-                            Math.round(moduleMap['Vocabulary'] || 0),
-                            Math.round(moduleMap['Reading'] || 0),
-                            Math.round(moduleMap['Pragmatics'] || 0),
-                            Math.round(moduleMap['Grammar'] || 0)
-                        ],
-                        backgroundColor: 'rgba(6, 182, 212, 0.6)',
-                        borderColor: 'rgba(6, 182, 212, 1)',
-                        borderWidth: 2
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { labels: { color: '#94a3b8' } } },
-                scales: {
-                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { min: 0, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-                }
-            }
-        });
-
-        // --- CHART 6: XP Level Distribution (Doughnut) ---
-        const xpDist = data.xpDistribution || [];
-        const lvlCtx = document.getElementById('levelDistChart').getContext('2d');
-        const COLORS = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#0ea5e9'];
-        new Chart(lvlCtx, {
-            type: 'doughnut',
-            data: {
-                labels: xpDist.map(l => `Nivel ${l.Level}`),
-                datasets: [{
-                    data: xpDist.map(l => l.StudentCount),
-                    backgroundColor: xpDist.map((_, i) => COLORS[i % COLORS.length]),
-                    borderWidth: 2,
-                    borderColor: '#0f1628'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } }
-                }
-            }
-        });
-
-        // --- CHART 7: Top 10 Students by XP (Horizontal Bar) ---
-        const topS = data.topStudents || [];
-        const topCtx = document.getElementById('topStudentsChart').getContext('2d');
-        new Chart(topCtx, {
-            type: 'bar',
-            data: {
-                labels: topS.map(s => s.FullName),
-                datasets: [{
-                    label: 'XP Total',
-                    data: topS.map(s => s.TotalXP),
-                    backgroundColor: topS.map((_, i) => i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : 'rgba(124, 58, 237, 0.6)'),
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } }
-                }
-            }
-        });
-
-        // --- CHART 8: K-Means Cluster Pie ---
-        const clusters = data.clusterSummary || [];
-        const clCtx = document.getElementById('clusterChart').getContext('2d');
-        new Chart(clCtx, {
-            type: 'pie',
-            data: {
-                labels: clusters.map(c => c.name),
-                datasets: [{
-                    data: clusters.map(c => c.count),
-                    backgroundColor: clusters.map(c => c.color + 'cc'),
-                    borderColor: clusters.map(c => c.color),
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } } }
-            }
-        });
-
-        // Render cluster legend cards
-        const clusterLegend = document.getElementById('clusterLegend');
-        if (clusterLegend && clusters.length > 0) {
-            clusterLegend.innerHTML = clusters.map(c => `
-                <div style="display:inline-block; margin:0.25rem; padding:0.5rem 0.75rem; background:${c.color}22; border:1px solid ${c.color}; border-radius:8px; font-size:0.8rem;">
-                    <span style="color:${c.color}; font-weight:700;">${c.name}</span>
-                    <span style="color:#94a3b8; margin-left:0.5rem;">${c.count} estudiantes · Promedio: ${c.avgScore}%</span>
-                </div>
-            `).join('');
-        }
-
-    } catch (e) {
-        console.warn('Error loading extended analytics:', e);
-    }
-});
-</script>
 
 <style>
 /* 

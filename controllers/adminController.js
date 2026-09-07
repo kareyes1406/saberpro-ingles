@@ -6,6 +6,7 @@
 const User = require('../models/User');
 const Gamification = require('../models/Gamification');
 const Evaluation = require('../models/Evaluation');
+const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
 const { executeQuery, sql } = require('../config/database');
 const MLService = require('../services/mlService');
@@ -67,14 +68,21 @@ exports.showDashboard = async (req, res) => {
             ORDER BY U.CreatedAt DESC
         `);
         
+        // Mensajes de estudiantes
+        const unreadMessagesCount = await Message.getAdminUnreadCount();
+        const recentMessages = await Message.getAdminRecentMessages(5);
+        
         res.render('admin/dashboard', {
             title: 'Dashboard Administrativo',
             kpis: {
                 totalUsers: totalUsersCount,
                 completionRate,
                 abandonRate,
-                avgTimeMinutes
+                avgTimeMinutes,
+                unreadMessages: unreadMessagesCount
             },
+            unreadMessagesCount,
+            recentMessages,
             users: usersResult.recordset,
             user: req.session.user
         });
@@ -251,7 +259,10 @@ exports.getKPIData = async (req, res) => {
                 ISNULL(UG.TotalXP, 0) as totalXP,
                 ISNULL(UG.Level, 1) as level,
                 ISNULL(UG.CurrentStreak, 0) as currentStreak,
-                ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
+                ISNULL(
+                    (SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1),
+                    ISNULL((SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC), 0)
+                ) as avgScore,
                 ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
                 ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
@@ -298,10 +309,12 @@ exports.showProfile = async (req, res) => {
     try {
         const userId = req.session.userId;
         const adminResult = await User.findById(userId);
+        const unreadMessagesCount = await Message.getAdminUnreadCount();
         res.render('admin/profile', {
             title: 'Mi Perfil de Administrador',
             cssFile: 'admin.css',
             admin: adminResult,
+            unreadMessagesCount,
             user: req.session.user
         });
     } catch (error) {
@@ -360,10 +373,16 @@ exports.showStudentDetail = async (req, res) => {
             GROUP BY AT.TypeName
         `, [{ name: 'UserID', type: sql.Int, value: targetUserId }]);
 
-        // Build data points for Linear Regression (week → avg score)
-        const weekData = weeklyProgress.recordset
-            .filter(w => w.AvgScore !== null)
-            .map(w => ({ x: w.WeekNumber, y: parseFloat(w.AvgScore) }));
+        // Build data points for Linear Regression (week → avg score) with Pre-Test baseline (Week 0)
+        const weekData = [];
+        if (preTest && preTest.TotalScore !== null && preTest.TotalScore !== undefined) {
+            weekData.push({ x: 0, y: parseFloat(preTest.TotalScore) });
+        }
+        weeklyProgress.recordset
+            .filter(w => w.AvgScore !== null && w.AvgScore !== undefined)
+            .forEach(w => {
+                weekData.push({ x: w.WeekNumber, y: parseFloat(w.AvgScore) });
+            });
 
         const linearResult = MLService.linearRegression(weekData);
 
@@ -426,7 +445,10 @@ exports.showStudentDetail = async (req, res) => {
         const studentsForCluster = await executeQuery(`
             SELECT U.UserID,
                 ISNULL(UG.TotalXP, 0) as totalXP,
-                ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
+                ISNULL(
+                    (SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1),
+                    ISNULL((SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC), 0)
+                ) as avgScore,
                 ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
                 ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                     INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
@@ -452,6 +474,7 @@ exports.showStudentDetail = async (req, res) => {
             logisticResult,
             clusterInfo: thisStudentCluster,
             projectedSaberPro: Math.round((linearResult.projectedScore / 100) * 300) || Math.round((avgScore / 100) * 300),
+            unreadMessagesCount: await Message.getAdminUnreadCount(),
             user: req.session.user
         });
     } catch (error) {

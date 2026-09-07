@@ -57,7 +57,13 @@ class ProfessorController {
                        (SELECT TOP 1 A3.Title FROM UserProgress UP3 
                         INNER JOIN Activities A3 ON UP3.ActivityID = A3.ActivityID 
                         WHERE UP3.UserID = U.UserID AND UP3.IsCompleted = 1 
-                        ORDER BY UP3.CompletedAt DESC) as CurrentActivity
+                        ORDER BY UP3.CompletedAt DESC) as CurrentActivity,
+                       (SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC) as PreTestScore,
+                       ISNULL(
+                           (SELECT AVG(UP4.Score) FROM UserProgress UP4 WHERE UP4.UserID = U.UserID AND UP4.IsCompleted = 1), 
+                           (SELECT TOP 1 TotalScore FROM UserExams UE2 WHERE UE2.UserID = U.UserID AND UE2.ExamType = 'PRE' ORDER BY CompletedAt DESC)
+                       ) as AvgScore,
+                       ISNULL((SELECT COUNT(*) FROM UserProgress UP5 WHERE UP5.UserID = U.UserID AND UP5.IsCompleted = 1), 0) as CompletedCount
                 FROM Users U
                 INNER JOIN Roles R ON U.RoleID = R.RoleID
                 LEFT JOIN UserGamification UG ON U.UserID = UG.UserID
@@ -168,7 +174,10 @@ class ProfessorController {
                     ISNULL(UG.TotalXP, 0) as totalXP,
                     ISNULL(UG.Level, 1) as level,
                     ISNULL(UG.CurrentStreak, 0) as currentStreak,
-                    ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
+                    ISNULL(
+                        (SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1),
+                        ISNULL((SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC), 0)
+                    ) as avgScore,
                     ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
                     ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                         INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID
@@ -261,10 +270,16 @@ class ProfessorController {
                 GROUP BY AT.TypeName
             `, [{ name: 'UserID', type: sql.Int, value: targetUserId }]);
 
-            // Linear Regression
-            const weekData = weeklyProgress.recordset
-                .filter(w => w.AvgScore !== null)
-                .map(w => ({ x: w.WeekNumber, y: parseFloat(w.AvgScore) }));
+            // Linear Regression with Pre-Test baseline (Week 0)
+            const weekData = [];
+            if (preTest && preTest.TotalScore !== null && preTest.TotalScore !== undefined) {
+                weekData.push({ x: 0, y: parseFloat(preTest.TotalScore) });
+            }
+            weeklyProgress.recordset
+                .filter(w => w.AvgScore !== null && w.AvgScore !== undefined)
+                .forEach(w => {
+                    weekData.push({ x: w.WeekNumber, y: parseFloat(w.AvgScore) });
+                });
 
             const linearResult = MLService.linearRegression(weekData);
 
@@ -318,7 +333,10 @@ class ProfessorController {
             const studentsForCluster = await executeQuery(`
                 SELECT U.UserID,
                     ISNULL(UG.TotalXP, 0) as totalXP,
-                    ISNULL((SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1), 0) as avgScore,
+                    ISNULL(
+                        (SELECT AVG(UP2.Score) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID AND UP2.IsCompleted = 1),
+                        ISNULL((SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC), 0)
+                    ) as avgScore,
                     ISNULL((SELECT AVG(CAST(UP2.AttemptNumber AS FLOAT)) FROM UserProgress UP2 WHERE UP2.UserID = U.UserID), 1) as avgAttempts,
                     ISNULL((SELECT COUNT(DISTINCT MW.WeekNumber) FROM UserProgress UP2
                         INNER JOIN Activities A2 ON UP2.ActivityID = A2.ActivityID

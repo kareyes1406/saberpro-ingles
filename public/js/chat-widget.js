@@ -4,8 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!document.querySelector('.chat-widget-wrapper')) {
         const widgetHtml = `
         <div class="chat-widget-wrapper">
-            <button class="chat-toggle-btn" id="chatToggleBtn">
-                <i class="fas fa-comment"></i>
+            <button class="chat-toggle-btn" id="chatToggleBtn" title="Asistencia y Mensajes con Docente">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 9h-8c-.55 0-1-.45-1-1s.45-1 1-1h8c.55 0 1 .45 1 1s-.45 1-1 1zm0-3h-8c-.55 0-1-.45-1-1s.45-1 1-1h8c.55 0 1 .45 1 1s-.45 1-1 1zm-4 6H9c-.55 0-1-.45-1-1s.45-1 1-1h4c.55 0 1 .45 1 1s-.45 1-1 1z"/>
+                </svg>
+                <span class="chat-tooltip">💬 Chatear con Soporte / Docente</span>
                 <span class="chat-unread-badge" id="chatUnreadBadge">0</span>
             </button>
             
@@ -16,19 +19,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3>Asistencia UDECIA / Profe</h3>
                         <p>En línea</p>
                     </div>
-                    <button class="chat-close-btn" id="chatCloseBtn"><i class="fas fa-times"></i></button>
+                    <button class="chat-close-btn" id="chatCloseBtn" aria-label="Cerrar chat">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
                 </div>
                 
                 <div class="chat-messages" id="chatMessages">
                     <div class="chat-message received">
-                        ¡Hola! Soy UDECIA, tu asistente. También puedes usar este chat para hablar con tu profesor. ¿En qué te ayudo?
+                        ¡Hola! Soy UDECIA, tu asistente. También puedes usar este chat para hablar con tu profesor o administrador. ¿En qué te ayudo?
                         <span class="chat-time">Ahora</span>
                     </div>
                 </div>
                 
                 <div class="chat-input-area">
                     <input type="text" class="chat-input" id="chatInput" placeholder="Escribe un mensaje...">
-                    <button class="chat-send-btn" id="chatSendBtn"><i class="fas fa-paper-plane"></i></button>
+                    <button class="chat-send-btn" id="chatSendBtn" aria-label="Enviar mensaje">
+                        <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>`;
@@ -100,18 +111,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = chatInput.value.trim();
         if (!text) return;
 
-        // Optimistic UI update
-        appendMessage(text, 'sent');
         chatInput.value = '';
+        sendBtn.disabled = true;
 
         try {
-            await fetch('/messages/send', {
+            const res = await fetch('/messages/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text, content: text, subject: 'Mensaje de estudiante' })
             });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                appendMessage(text, 'sent');
+            } else {
+                alert(data.message || 'Error al enviar el mensaje. Por favor intenta de nuevo.');
+                chatInput.value = text;
+            }
         } catch (e) {
             console.error('Error sending message', e);
+            alert('Error de conexión al enviar tu mensaje. Revisa tu conexión a internet.');
+            chatInput.value = text;
+        } finally {
+            sendBtn.disabled = false;
         }
     }
 

@@ -4,6 +4,9 @@ class MessageController {
     async sendMessage(req, res) {
         try {
             const senderId = req.session.userId || req.session.user?.UserID;
+            if (!senderId) {
+                return res.status(401).json({ success: false, message: 'Sesión no válida o expirada. Por favor recarga la página.' });
+            }
             const { subject, text, content, receiverId, parentId } = req.body;
             const messageBody = text || content;
             if (!messageBody || messageBody.trim() === '') {
@@ -12,7 +15,7 @@ class MessageController {
             const targetReceiver = receiverId ? parseInt(receiverId, 10) : null;
             const parent = parentId ? parseInt(parentId, 10) : null;
             
-            await Message.sendMessage(senderId, targetReceiver, subject || 'Mensaje', messageBody, parent);
+            await Message.sendMessage(senderId, targetReceiver, subject || 'Mensaje de estudiante', messageBody.trim(), parent);
             res.json({ success: true, message: 'Mensaje enviado correctamente.' });
         } catch (error) {
             console.error('Error in sendMessage:', error);
@@ -23,8 +26,12 @@ class MessageController {
     async getStudentMessages(req, res) {
         try {
             const userId = req.session.userId || req.session.user?.UserID;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: 'No autorizado' });
+            }
             const messages = await Message.getUserMessages(userId);
-            res.json({ success: true, messages });
+            const unreadCount = await Message.getUnreadCount(userId);
+            res.json({ success: true, messages, unreadCount });
         } catch (error) {
             console.error('Error in getStudentMessages:', error);
             res.status(500).json({ success: false, message: 'Error obteniendo los mensajes.' });
@@ -37,8 +44,10 @@ class MessageController {
                 return res.redirect('/admin/dashboard');
             }
             const messages = await Message.getAdminInbox();
+            const unreadMessagesCount = await Message.getAdminUnreadCount();
             res.render('admin/messages', {
                 messages,
+                unreadMessagesCount,
                 title: 'Bandeja de Entrada',
                 cssFile: 'admin.css',
                 user: req.session.user

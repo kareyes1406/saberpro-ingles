@@ -15,8 +15,24 @@ class MLService {
     static linearRegression(dataPoints) {
         // dataPoints: [{x: weekNumber, y: score}, ...]
         const n = dataPoints.length;
-        if (n < 2) {
-            return { slope: 0, intercept: dataPoints[0]?.y || 0, projectedScore: dataPoints[0]?.y || 0, r2: 0 };
+        if (n === 0) {
+            return {
+                slope: 0,
+                intercept: 0,
+                projectedScore: 0,
+                r2: 0,
+                trendLine: Array.from({ length: 12 }, (_, i) => ({ x: i + 1, y: 0 }))
+            };
+        }
+        if (n === 1) {
+            const baseScore = Math.round(dataPoints[0].y || 0);
+            return {
+                slope: 0,
+                intercept: baseScore,
+                projectedScore: baseScore,
+                r2: 0,
+                trendLine: Array.from({ length: 12 }, (_, i) => ({ x: i + 1, y: baseScore }))
+            };
         }
 
         const sumX = dataPoints.reduce((s, p) => s + p.x, 0);
@@ -24,17 +40,24 @@ class MLService {
         const sumXY = dataPoints.reduce((s, p) => s + p.x * p.y, 0);
         const sumX2 = dataPoints.reduce((s, p) => s + p.x * p.x, 0);
 
-        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-        const intercept = (sumY - slope * sumX) / n;
+        const denominator = (n * sumX2 - sumX * sumX);
+        const rawSlope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0;
+        const meanY = sumY / n;
+
+        // Amortiguación regularizada de la pendiente para muestras pequeñas:
+        // Con pocas semanas, una pendiente pronunciada no debe proyectar valores absurdos.
+        // Se alcanza confianza completa a partir de 6 puntos de datos.
+        const confidence = Math.min(1, n / 6);
+        const slope = rawSlope * confidence;
+        const intercept = meanY - slope * (sumX / n);
 
         // Proyectar a la semana 12 (Post-Test)
         const projectedScore = Math.min(100, Math.max(0, Math.round(slope * 12 + intercept)));
 
-        // Calcular R² (coeficiente de determinación)
-        const meanY = sumY / n;
+        // Calcular R²
         const ssTot = dataPoints.reduce((s, p) => s + Math.pow(p.y - meanY, 2), 0);
         const ssRes = dataPoints.reduce((s, p) => s + Math.pow(p.y - (slope * p.x + intercept), 2), 0);
-        const r2 = ssTot > 0 ? Math.round((1 - ssRes / ssTot) * 100) / 100 : 0;
+        const r2 = ssTot > 0 ? Math.max(0, Math.round((1 - ssRes / ssTot) * 100) / 100) : 0;
 
         // Generar puntos de la línea de tendencia para graficar (semanas 1-12)
         const trendLine = Array.from({ length: 12 }, (_, i) => ({
@@ -83,12 +106,18 @@ class MLService {
         const probability = Math.round((1 / (1 + Math.exp(-z))) * 100);
         const clampedProbability = Math.min(99, Math.max(1, probability));
 
-        // Identificar factores de riesgo principales
+        // Identificar factores de riesgo principales de manera justa según el avance
         const riskFactors = [];
-        if ((features.avgScore || 0) < 60) riskFactors.push({ factor: 'Puntaje Promedio Bajo', impact: 'Alto' });
-        if ((features.avgAttempts || 1) > 2) riskFactors.push({ factor: 'Muchos Reintentos', impact: 'Medio' });
-        if ((features.completedWeeks || 0) < 4) riskFactors.push({ factor: 'Pocas Semanas Completadas', impact: 'Alto' });
-        if ((features.currentStreak || 0) < 3) riskFactors.push({ factor: 'Baja Constancia (Racha)', impact: 'Medio' });
+        if ((features.avgScore || 0) < 60) riskFactors.push({ factor: 'Puntaje Promedio Bajo (<60%)', impact: 'Alto' });
+        if ((features.avgAttempts || 1) > 2.5) riskFactors.push({ factor: 'Múltiples Reintentos por Actividad', impact: 'Medio' });
+        if ((features.completedWeeks || 0) === 0 && (features.avgScore || 0) < 60) {
+            riskFactors.push({ factor: 'Sin Módulos Iniciados y Diagnóstico Bajo', impact: 'Alto' });
+        } else if ((features.completedWeeks || 0) > 0 && (features.completedWeeks || 0) < 3 && (features.avgScore || 0) < 60) {
+            riskFactors.push({ factor: 'Ritmo Inicial Lento', impact: 'Medio' });
+        }
+        if ((features.currentStreak || 0) === 0 && (features.completedWeeks || 0) > 0) {
+            riskFactors.push({ factor: 'Inactividad Reciente (Racha en 0)', impact: 'Medio' });
+        }
 
         const recommendation = clampedProbability >= 80
             ? '✅ Excelente trayectoria. Mantén el ritmo actual.'
@@ -113,8 +142,31 @@ class MLService {
     // =========================================================
     static kMeansClustering(students, k = 3, maxIterations = 50) {
         if (students.length < k) {
-            // Si hay menos estudiantes que clusters, asignar uno por uno
-            return students.map((s, i) => ({ ...s, cluster: i % k, clusterName: ['En Riesgo', 'En Progreso', 'Alto Rendimiento'][i % k] }));
+            // Si hay menos estudiantes que clusters, clasificar individualmente según su rendimiento real
+            return students.map((s) => {
+                const score = s.avgScore || 0;
+                let cluster, clusterName, clusterColor;
+                if (score >= 75) {
+                    cluster = 2;
+                    clusterName = 'Alto Rendimiento ✅';
+                    clusterColor = '#10b981';
+                } else if (score >= 60) {
+                    cluster = 1;
+                    clusterName = 'En Progreso ⚠️';
+                    clusterColor = '#f59e0b';
+                } else {
+                    cluster = 0;
+                    clusterName = 'En Riesgo 🚨';
+                    clusterColor = '#ef4444';
+                }
+                return {
+                    ...s,
+                    cluster,
+                    clusterName,
+                    clusterColor,
+                    clusterMetrics: { size: 1, avgScore: Math.round(score), avgXP: Math.round(s.totalXP || 0) }
+                };
+            });
         }
 
         // Normalizar features (min-max scaling)

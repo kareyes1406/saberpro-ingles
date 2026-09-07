@@ -36,7 +36,8 @@ class Message {
     static async getAdminInbox() {
         const query = `
             SELECT m.*, 
-                   s.FirstName + ' ' + s.LastName AS SenderName
+                   s.FirstName + ' ' + s.LastName AS SenderName,
+                   s.Email AS SenderEmail
             FROM Messages m
             LEFT JOIN Users s ON m.SenderID = s.UserID
             LEFT JOIN Users r ON m.ReceiverID = r.UserID
@@ -45,6 +46,23 @@ class Message {
             ORDER BY m.CreatedAt DESC
         `;
         const result = await executeQuery(query);
+        return result.recordset || [];
+    }
+
+    static async getAdminRecentMessages(limit = 5) {
+        const query = `
+            SELECT TOP (@Limit) m.*, 
+                   s.FirstName + ' ' + s.LastName AS SenderName,
+                   s.Email AS SenderEmail
+            FROM Messages m
+            LEFT JOIN Users s ON m.SenderID = s.UserID
+            LEFT JOIN Users r ON m.ReceiverID = r.UserID
+            LEFT JOIN Roles ro ON r.RoleID = ro.RoleID
+            WHERE m.ReceiverID IS NULL OR ro.RoleName = 'admin'
+            ORDER BY m.CreatedAt DESC
+        `;
+        const params = [{ name: 'Limit', type: sql.Int, value: limit }];
+        const result = await executeQuery(query, params);
         return result.recordset || [];
     }
 
