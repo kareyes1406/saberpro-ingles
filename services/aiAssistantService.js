@@ -169,7 +169,7 @@ class AIAssistantService {
         const typeNames = {
             'Vocabulary': 'Vocabulario',
             'Reading': 'Comprensión Lectora',
-            'Pragmatics': 'Pragmática',
+            'Pragmatics': 'Avisos y Diálogos',
             'Grammar': 'Gramática'
         };
         

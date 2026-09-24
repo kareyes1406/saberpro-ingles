@@ -42,7 +42,7 @@
             { label: 'Total', value: Math.round(preTest.TotalScore || 0), color: '#7c3aed' },
             { label: 'Vocabulario', value: Math.round(preTest.VocabularyScore || 0), color: '#06b6d4' },
             { label: 'Lectura', value: Math.round(preTest.ReadingScore || 0), color: '#10b981' },
-            { label: 'Pragmática', value: Math.round(preTest.PragmaticsScore || 0), color: '#f59e0b' },
+            { label: 'Avisos y Diálogos', value: Math.round(preTest.PragmaticsScore || 0), color: '#f59e0b' },
             { label: 'Gramática', value: Math.round(preTest.GrammarScore || 0), color: '#ec4899' }
           ]; %>
           <% competencies.forEach(c => { %>
@@ -205,8 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Competency Radar Chart
     const compData = <%- JSON.stringify(competencyProgress) %>;
-    const typeMap = { Vocabulary: 'Vocabulario', Reading: 'Lectura', Pragmatics: 'Pragmática', Grammar: 'Gramática' };
-    const radarLabels = ['Vocabulario', 'Lectura', 'Pragmática', 'Gramática'];
+    const typeMap = { Vocabulary: 'Vocabulario', Reading: 'Lectura', Pragmatics: 'Avisos y Diálogos', Grammar: 'Gramática' };
+    const radarLabels = ['Vocabulario', 'Lectura', 'Avisos y Diálogos', 'Gramática'];
     const typeKeys = ['Vocabulary', 'Reading', 'Pragmatics', 'Grammar'];
     const radarValues = typeKeys.map(k => {
         const found = compData.find(c => c.TypeName === k);

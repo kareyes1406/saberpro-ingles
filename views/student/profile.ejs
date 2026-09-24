@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(ctx.getContext('2d'), {
             type: 'radar',
             data: {
-                labels: ['Vocabulario', 'Comprensión Lectora', 'Pragmática', 'Gramática'],
+                labels: ['Vocabulario', 'Comprensión Lectora', 'Avisos y Diálogos', 'Gramática'],
                 datasets: [{
                     label: 'Desempeño (%)',
                     data: [<%= aiReport.radarData.join(',') %>],
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
       el: '#aiRadarChart',
       img: '/img/mascota/pensar1.png',
       title: 'Gráfico Radial de Habilidades',
-      text: 'Este radar muestra tu nivel de dominio en Vocabulario, Comprensión Lectora, Pragmática y Gramática.'
+      text: 'Este radar muestra tu nivel de dominio en Vocabulario, Comprensión Lectora, Avisos y Diálogos, y Gramática.'
     },
     {
       el: 'h2:contains("Diagnóstico de UDECIA")', // Fallback, se reemplaza dinámicamente en el DOMContentLoaded

@@ -143,7 +143,7 @@ async function loadCharts() {
             new Chart(preVsCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Vocabulario', 'Comprensión Lectora', 'Pragmática', 'Gramática'],
+                    labels: ['Vocabulario', 'Comprensión Lectora', 'Avisos y Diálogos', 'Gramática'],
                     datasets: [
                         {
                             label: 'Pre-Test',
