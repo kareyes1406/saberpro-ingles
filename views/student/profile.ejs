@@ -21,7 +21,7 @@
     </div>
 
     <!-- Stats Grid -->
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom: 2.5rem;">
+    <div id="profileStatsGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom: 2.5rem;">
         <!-- Level Card -->
         <div class="stat-tooltip-wrapper" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1.5rem; text-align:center;">
             <div style="font-size:2.5rem; margin-bottom:0.5rem;">⭐</div>
@@ -272,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
       text: 'Aquí está tu información personal. Puedes usar el botón de "Editar Perfil" si necesitas actualizar tu nombre o contraseña.'
     },
     {
-      el: '.stat-tooltip-wrapper', // Selects the first stat card
+      el: '#profileStatsGrid', 
       img: '/img/mascota/celebrar1.png',
       title: 'Estadísticas Generales',
       text: 'Estas tarjetas resumen tu Nivel, Racha actual, Monedas acumuladas y tu porcentaje de actividades completadas.'

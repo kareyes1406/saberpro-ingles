@@ -114,8 +114,8 @@
     let parent = el.parentElement;
     while(parent && parent.tagName !== 'BODY') {
         const style = window.getComputedStyle(parent);
-        // Si el padre tiene un contexto de apilamiento, elevarlo
-        if(style.position !== 'static' || style.display === 'flex' || style.display === 'grid') {
+        // Solo elevar si realmente crea un contexto de apilamiento conflictivo
+        if((style.position !== 'static' && style.zIndex !== 'auto') || style.position === 'sticky' || style.position === 'fixed') {
             parent.classList.add('tour-elevated-parent');
         }
         parent = parent.parentElement;
