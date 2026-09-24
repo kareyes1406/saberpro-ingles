@@ -209,3 +209,123 @@ exports.submitExam = async (req, res) => {
         res.status(500).json({ error: 'Error al enviar examen' });
     }
 };
+
+exports.showPostTestIntro = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        // Check if user already took the post-test
+        const existingQuery = `SELECT * FROM UserExams WHERE UserID = @UserID AND ExamType = 'POST'`;
+        const existingResult = await executeQuery(existingQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);
+        
+        if (existingResult.recordset.length > 0) {
+            return res.redirect('/student'); // Already completed
+        }
+
+        const studentStats = await Gamification.getStudentStats(userId) || {
+            TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0
+        };
+
+        res.render('student/post-test-intro', {
+            title: 'Examen Final (Post-Test)',
+            cssFile: 'exam-intro.css',
+            studentStats,
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('Show Post-Test Intro Error:', error);
+        res.status(500).send('Error cargando la introducción del post-test.');
+    }
+};
+
+exports.showPostTest = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        // Check if user already took the post-test
+        const existingQuery = `SELECT * FROM UserExams WHERE UserID = @UserID AND ExamType = 'POST'`;
+        const existingResult = await executeQuery(existingQuery, [{ name: 'UserID', type: sql.Int, value: userId }]);
+        
+        if (existingResult.recordset.length > 0) {
+            return res.redirect('/student'); // Already completed
+        }
+
+        // Fetch Pragmatics and Vocabulary
+        const qPrag = await Module.getRandomQuestionsByType('part1_notice', 4, userId, 0); // 4 questions
+        const qVocab = await Module.getRandomQuestionsByType('part2_matching', 4, userId, 0); // 4 questions
+        const singleQuestions = shuffleArray([...qPrag, ...qVocab]);
+
+        // Fetch Reading text and Grammar text (6 questions each = 20 total)
+        // We'll just fetch a random text, the number of questions depends on the passage length (usually 5-7)
+        const readingData = await Module.getRandomTextWithQuestions('part6_critical'); // Advanced reading
+        const clozeData = await Module.getRandomTextWithQuestions('part7_cloze_advanced'); // Advanced grammar
+
+        const correctAnswers = {};
+        let totalCount = 0;
+
+        // Process Single Questions
+        const processedSingles = singleQuestions.map(q => {
+            const correctOpt = q.Options.find(o => o.IsCorrect);
+            if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+            totalCount++;
+            return {
+                ...q,
+                Options: shuffleArray(q.Options.map(o => ({ OptionID: o.OptionID, OptionText: o.OptionText })))
+            };
+        });
+
+        // Process Reading
+        let processedReading = null;
+        if (readingData) {
+            processedReading = {
+                title: readingData.title,
+                passage: readingData.passage,
+                questions: readingData.questions.map(q => {
+                    const correctOpt = q.Options.find(o => o.IsCorrect);
+                    if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+                    totalCount++;
+                    return {
+                        ...q,
+                        Options: shuffleArray(q.Options.map(o => ({ OptionID: o.OptionID, OptionText: o.OptionText })))
+                    };
+                })
+            };
+        }
+
+        // Process Grammar (Cloze)
+        let processedCloze = null;
+        if (clozeData) {
+            processedCloze = {
+                title: clozeData.title,
+                passage: clozeData.passage,
+                questions: clozeData.questions.map(q => {
+                    const correctOpt = q.Options.find(o => o.IsCorrect);
+                    if (correctOpt) correctAnswers[q.QuestionID] = correctOpt.OptionID;
+                    totalCount++;
+                    return {
+                        ...q,
+                        Options: q.Options.map(o => ({ OptionID: o.OptionID, OptionText: o.OptionText }))
+                    };
+                })
+            };
+        }
+
+        req.session.examAnswers = correctAnswers;
+        req.session.examType = 'POST';
+
+        res.render('student/exam', {
+            title: 'Post-Test Final',
+            cssFile: 'exam.css',
+            jsFile: 'exam.js',
+            singleQuestions: processedSingles,
+            readingData: processedReading,
+            clozeData: processedCloze,
+            totalQuestions: totalCount,
+            examType: 'POST',
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('Show Post-Test Error:', error);
+        res.status(500).send('Error cargando el examen final.');
+    }
+};

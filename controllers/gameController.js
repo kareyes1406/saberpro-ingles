@@ -384,7 +384,7 @@ exports.showPragmatics = async (req, res) => {
         req.session.pragmaticsAnswers = correctAnswers;
         
         res.render('student/pragmatics', {
-            title: questionType === 'part1_notice' ? 'Avisos y Señales' : 'Conversaciones',
+            title: questionType === 'part1_notice' ? 'Avisos y Señales' : 'Contexto y Respuesta',
             cssFile: 'pragmatics.css',
             jsFile: 'pragmatics.js',
             activity,
@@ -592,20 +592,22 @@ exports.showBossBattle = async (req, res) => {
             'SELECT WeekNumber FROM ModuleWeeks MW INNER JOIN Activities A ON MW.WeekID = A.WeekID WHERE A.ActivityID = @ActivityID',
             [{ name: 'ActivityID', type: sql.Int, value: activityId }]
         );
-        const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 4;
-        const cutNumber = Math.ceil(weekNumber / 4);
+        const cutNumber = weekNumber; // Ahora cada semana es un corte
         
-        // Seleccionar preguntas aleatorias según el corte
+        // Seleccionar preguntas aleatorias según la semana (corte)
         let questionTypes = [];
         if (cutNumber === 1) {
-            // Corte 1: Parts 1, 2, 3 (A1-A2)
+            // Semana 1: Parts 1, 2, 3 (A1-A2)
             questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue'];
         } else if (cutNumber === 2) {
-            // Corte 2: Parts 4, 5 (A2-B1)
+            // Semana 2: Parts 4, 5 (A2-B1)
             questionTypes = ['part4_cloze', 'part5_reading'];
-        } else {
-            // Corte 3: Parts 6, 7 (B1-B2) - Evaluación integral
+        } else if (cutNumber === 3) {
+            // Semana 3: Parts 6, 7 (B1-B2)
             questionTypes = ['part6_critical', 'part7_cloze_advanced'];
+        } else {
+            // Semana 4: Evaluación integral (Repaso de todo)
+            questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue', 'part4_cloze', 'part5_reading', 'part6_critical', 'part7_cloze_advanced'];
         }
         
         const questions = await Module.getRandomQuestionsFromPools(questionTypes, 15);

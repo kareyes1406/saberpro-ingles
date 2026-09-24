@@ -4,7 +4,7 @@
     <div class="exam-sidebar">
         <div class="timer-card">
             <h3>Tiempo Restante</h3>
-            <div id="exam-timer" class="timer-display">45:00</div>
+            <div id="exam-timer" class="timer-display">20:00</div>
         </div>
         <div class="progress-card">
             <h3>Progreso</h3>
@@ -23,9 +23,9 @@
         </div>
 
         <form id="examForm">
-            <!-- Sección 1: Preguntas Individuales (Pragmática y Vocabulario) -->
+            <!-- Sección 1: Preguntas Individuales (Avisos, Diálogos y Vocabulario) -->
             <% if (singleQuestions && singleQuestions.length > 0) { %>
-                <h3 class="section-title">Parte 1: Vocabulario y Pragmática</h3>
+                <h3 class="section-title">Parte 1: Vocabulario, Avisos y Diálogos</h3>
                 <% singleQuestions.forEach((q, index) => { %>
                     <div class="question-card" id="q-card-<%= q.QuestionID %>" data-qid="<%= q.QuestionID %>">
                         <div class="question-number">Pregunta <%= index + 1 %></div>

@@ -45,7 +45,11 @@ exports.showRoadmap = async (req, res) => {
         const enrichedWeeks = [];
         let previousCompleted = true; // First week is always available
         
-        for (const week of weeks) {
+        // Sólo tomamos las primeras 4 semanas si hay más en DB
+        const maxWeeks = Math.min(weeks.length, 4);
+        const activeWeeks = weeks.slice(0, maxWeeks);
+        
+        for (const week of activeWeeks) {
             const weekActivities = await Module.getWeekActivities(week.WeekID);
             
             // Filter progress to find unique activities completed in this specific week

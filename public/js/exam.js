@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalQuestions = document.querySelectorAll('.question-card, .cloze-inline-select').length;
     let answeredCount = 0;
     
-    // Timer: 45 minutes
-    let timeRemaining = 45 * 60;
+    // Timer: 20 minutes
+    let timeRemaining = 20 * 60;
     const startTime = Date.now();
 
     const timerInterval = setInterval(() => {

@@ -126,7 +126,7 @@
                             Sub-módulo <%= act.SortOrder %>
                         </span>
                         <span style="font-size:0.75rem; color:var(--text-muted);">
-                            <%= act.GameMechanic === 'vocabulary_match' ? 'Vocabulario' : (act.GameMechanic === 'drag_drop' ? 'Lectura' : (act.GameMechanic === 'pragmatics_map' ? 'Pragmática' : (act.GameMechanic === 'grammar_circuit' ? 'Gramática' : 'Evaluación'))) %>
+                            <%= act.GameMechanic === 'vocabulary_match' ? 'Vocabulario' : (act.GameMechanic === 'drag_drop' ? 'Lectura' : (act.GameMechanic === 'pragmatics_map' ? 'Avisos/Diálogos' : (act.GameMechanic === 'grammar_circuit' ? 'Gramática' : 'Evaluación'))) %>
                         </span>
                     </div>
                     <h3 class="activity-title <%= act.isAvailable ? 'available' : 'locked' %>"><%= act.Title %></h3>
