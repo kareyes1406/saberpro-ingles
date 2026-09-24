@@ -103,103 +103,173 @@
   </div>
 </div>
 
-<!-- Intro.js Tour Implementation -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
+<!-- Custom UDECIA Interactive Tour -->
 <style>
-  .introjs-tooltip { 
-    border-radius: 12px; 
-    background: var(--bg-surface) !important; 
-    color: var(--text-primary) !important; 
-    border: 1px solid var(--accent-cyan); 
-    max-width: 350px;
-    box-sizing: border-box;
+  #udecia-tour-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 9998;
   }
-  /* Forzar que el tooltip flotante siempre esté en el centro de la pantalla */
-  .introjs-tooltip.introjs-floating {
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    bottom: auto !important;
-    right: auto !important;
-    margin: 0 !important;
+  #udecia-tour-dialog {
+    display: none;
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%);
+    width: 90%; max-width: 600px;
+    background: var(--bg-card);
+    border: 2px solid var(--accent-cyan);
+    border-radius: 16px;
+    z-index: 10000;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(6, 182, 212, 0.4);
+    align-items: center;
+    gap: 20px;
+    animation: slideUpTour 0.4s ease-out;
   }
-  .introjs-arrow.top { border-bottom-color: var(--accent-cyan) !important; }
-  .introjs-arrow.bottom { border-top-color: var(--accent-cyan) !important; }
-  .introjs-arrow.left { border-right-color: var(--accent-cyan) !important; }
-  .introjs-arrow.right { border-left-color: var(--accent-cyan) !important; }
-  .introjs-button { background: var(--accent-purple); color: white; border: none; text-shadow: none; border-radius: 6px; }
-  .introjs-button:hover { background: #9333ea; color: white; }
-  .introjs-skipbutton { color: var(--text-muted); }
+  @keyframes slideUpTour {
+    from { bottom: -100px; opacity: 0; }
+    to { bottom: 30px; opacity: 1; }
+  }
+  .tour-highlighted-element {
+    position: relative !important;
+    z-index: 9999 !important;
+    box-shadow: 0 0 0 4px var(--accent-cyan), 0 0 20px var(--accent-cyan) !important;
+    background: var(--bg-card) !important;
+    border-radius: 8px !important;
+    transition: all 0.3s;
+  }
+  .navbar.tour-active-nav {
+     z-index: 9999 !important;
+     position: relative !important;
+  }
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
+<div id="udecia-tour-overlay"></div>
+<div id="udecia-tour-dialog">
+  <img id="tour-img" src="/img/mascota/saludar.png" style="width:100px; height:auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));">
+  <div style="flex:1;">
+    <h3 id="tour-title" style="margin-top:0; margin-bottom:8px; color:var(--accent-cyan); font-size:1.3rem;">Título</h3>
+    <p id="tour-text" style="font-size:1rem; margin-bottom:15px; color:var(--text-primary); line-height:1.4;">Texto</p>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <button id="tour-prev" class="btn-secondary" style="padding:0.4rem 1rem; font-size:0.9rem;" onclick="tourChangeStep(-1)">Anterior</button>
+      <span id="tour-progress" style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">1/5</span>
+      <button id="tour-next" class="btn-primary" style="padding:0.4rem 1rem; font-size:0.9rem;" onclick="tourChangeStep(1)">Siguiente</button>
+    </div>
+  </div>
+</div>
+
 <script>
+  const tourSteps = [
+    {
+      el: null,
+      img: '/img/mascota/saludar.png',
+      title: '¡Hola! Soy UDECIA',
+      text: 'Estoy muy feliz de verte. Te daré un recorrido rápido por tu Ruta de Aprendizaje para que sepas usar todo en esta pantalla.'
+    },
+    {
+      el: '.roadmap-container',
+      img: '/img/mascota/explicar1.png',
+      title: 'Tu Mapa de 4 Semanas',
+      text: 'Aquí verás tu progreso. Deberás completar las actividades de cada semana para desbloquear la siguiente.'
+    },
+    {
+      el: '.nav-stats',
+      img: '/img/mascota/explicar2.png',
+      title: 'Estadísticas Rápidas',
+      text: 'En la barra superior siempre podrás ver tu Nivel actual, los días de racha que llevas y tus monedas acumuladas.'
+    },
+    {
+      el: '#xpValue',
+      img: '/img/mascota/celebrar1.png',
+      title: 'Tu Experiencia (XP)',
+      text: '¡Ganas XP por cada respuesta correcta en los juegos! Al acumular 100 XP subirás de nivel.'
+    },
+    {
+      el: '#streakValue',
+      img: '/img/mascota/pensar1.png',
+      title: '¡No pierdas tu Racha!',
+      text: 'Este fuego cuenta los días seguidos que has entrado a estudiar. ¡Si fallas un día se apagará por completo!'
+    },
+    {
+      el: '#coinsValue',
+      img: '/img/mascota/explicar1.png',
+      title: 'Tus Monedas',
+      text: 'Las monedas son tu recompensa. Úsalas en la tienda para comprar ayudas o pistas cuando un nivel esté muy difícil.'
+    }
+  ];
+
+  let currentStep = 0;
+
   function startUdeciaTour() {
-    const intro = introJs();
-    intro.setOptions({
-      nextLabel: 'Siguiente',
-      prevLabel: 'Anterior',
-      doneLabel: '¡Entendido!',
-      skipLabel: 'Saltar',
-      showProgress: true,
-      showBullets: false,
-      tooltipPosition: 'auto',
-      steps: [
-        {
-          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
-                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
-                    <div><b>¡Hola! Soy UDECIA.</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Te daré un recorrido rápido por esta pantalla. ¡Haz clic en Siguiente!</span></div>
-                  </div>`
-        },
-        {
-          element: document.querySelector('.roadmap-container'),
-          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
-                    <img src="/img/mascota/explicar1.png" style="width:70px;" alt="Udecia">
-                    <div><b>Tu Mapa de 4 Semanas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Aquí verás tu progreso. Debes ir superando las actividades de cada semana para avanzar.</span></div>
-                  </div>`
-        },
-        {
-          element: document.querySelector('.nav-stats'),
-          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
-                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
-                    <div><b>Estadísticas Rápidas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">En la barra superior siempre podrás ver tu Nivel actual, tus días de Racha y tus Monedas.</span></div>
-                  </div>`
-        },
-        {
-          element: document.getElementById('xpValue') ? document.getElementById('xpValue').parentElement : document.querySelector('.stats-sidebar'),
-          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
-                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
-                    <div><b>Tu Experiencia (XP)</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">¡Ganas XP por cada respuesta correcta! Al acumular 100 XP subirás de nivel.</span></div>
-                  </div>`
-        },
-        {
-          element: document.getElementById('streakValue') ? document.getElementById('streakValue').parentElement : document.querySelector('.stats-sidebar'),
-          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
-                    <img src="/img/mascota/asombrada1.png" style="width:70px;" alt="Udecia">
-                    <div><b>¡No pierdas tu Racha!</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Este fuego 🔥 cuenta los días seguidos que has entrado. ¡Si fallas un día se apagará!</span></div>
-                  </div>`
-        },
-        {
-          element: document.getElementById('coinsValue') ? document.getElementById('coinsValue').parentElement : document.querySelector('.stats-sidebar'),
-          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
-                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
-                    <div><b>Tus Monedas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Las usarás en la tienda para comprar ayudas o pistas cuando un examen esté muy difícil.</span></div>
-                  </div>`
-        }
-      ]
-    });
-    intro.start();
+    document.getElementById('udecia-tour-overlay').style.display = 'block';
+    document.getElementById('udecia-tour-dialog').style.display = 'flex';
+    currentStep = 0;
+    renderTourStep();
   }
 
-  // Auto-start tour if it's the user's first time or requested via URL
+  function tourChangeStep(dir) {
+    currentStep += dir;
+    if (currentStep >= tourSteps.length) {
+        closeTour();
+    } else {
+        renderTourStep();
+    }
+  }
+
+  function closeTour() {
+    document.getElementById('udecia-tour-overlay').style.display = 'none';
+    document.getElementById('udecia-tour-dialog').style.display = 'none';
+    document.querySelectorAll('.tour-highlighted-element').forEach(el => el.classList.remove('tour-highlighted-element'));
+    const nav = document.querySelector('.navbar');
+    if(nav) nav.classList.remove('tour-active-nav');
+  }
+
+  function renderTourStep() {
+    // Limpiar destacados anteriores
+    document.querySelectorAll('.tour-highlighted-element').forEach(el => el.classList.remove('tour-highlighted-element'));
+    const nav = document.querySelector('.navbar');
+    if(nav) nav.classList.remove('tour-active-nav');
+
+    const step = tourSteps[currentStep];
+    
+    // Destacar elemento si existe
+    if (step.el) {
+        let targetEl = document.querySelector(step.el);
+        if (targetEl && step.el.includes('Value')) {
+            targetEl = targetEl.parentElement; // Subir al contenedor padre (la tarjeta)
+        }
+        
+        if (targetEl) {
+            targetEl.classList.add('tour-highlighted-element');
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Si el elemento está en la barra de navegación, darle z-index a la barra
+            if (step.el === '.nav-stats' && nav) {
+                nav.classList.add('tour-active-nav');
+            }
+        }
+    }
+
+    // Actualizar contenido del diálogo
+    document.getElementById('tour-img').src = step.img;
+    document.getElementById('tour-title').innerText = step.title;
+    document.getElementById('tour-text').innerText = step.text;
+    document.getElementById('tour-progress').innerText = (currentStep + 1) + ' / ' + tourSteps.length;
+    
+    document.getElementById('tour-prev').style.visibility = currentStep === 0 ? 'hidden' : 'visible';
+    document.getElementById('tour-next').innerText = currentStep === tourSteps.length - 1 ? '¡Finalizar!' : 'Siguiente';
+  }
+
+  // Auto-start tour
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('tour') || !localStorage.getItem('udeciaHomeTourDone')) {
       setTimeout(() => {
         startUdeciaTour();
         localStorage.setItem('udeciaHomeTourDone', 'true');
-        
-        // Remove ?tour=1 from URL so it doesn't loop on refresh
         if (urlParams.has('tour')) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
