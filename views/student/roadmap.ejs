@@ -103,4 +103,123 @@
   </div>
 </div>
 
+<!-- Intro.js Tour Implementation -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
+<style>
+  .introjs-tooltip { border-radius: 12px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--accent-cyan); max-width: 350px; }
+  .introjs-arrow.top { border-bottom-color: var(--accent-cyan); }
+  .introjs-arrow.bottom { border-top-color: var(--accent-cyan); }
+  .introjs-arrow.left { border-right-color: var(--accent-cyan); }
+  .introjs-arrow.right { border-left-color: var(--accent-cyan); }
+  .introjs-button { background: var(--accent-purple); color: white; border: none; text-shadow: none; border-radius: 6px; }
+  .introjs-button:hover { background: #9333ea; color: white; }
+  .introjs-skipbutton { color: var(--text-muted); }
+  
+  .tour-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: var(--bg-surface);
+    border: 2px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 100;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tour-btn:hover { background: rgba(6, 182, 212, 0.1); transform: translateY(-2px); }
+</style>
+
+<button class="tour-btn" onclick="startUdeciaTour()">
+  <img src="/img/mascota/feliz1.png" style="width:24px; height:24px;" alt="Udecia">
+  ¿Necesitas un recorrido?
+</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
+<script>
+  function startUdeciaTour() {
+    const intro = introJs();
+    intro.setOptions({
+      nextLabel: 'Siguiente',
+      prevLabel: 'Anterior',
+      doneLabel: '¡Entendido!',
+      skipLabel: 'Saltar',
+      showProgress: true,
+      showBullets: false,
+      steps: [
+        {
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
+                    <div><b>¡Hola! Soy UDECIA.</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Te daré un recorrido rápido por esta pantalla. ¡Haz clic en Siguiente!</span></div>
+                  </div>`
+        },
+        {
+          element: document.querySelector('.roadmap-container'),
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/explicar1.png" style="width:70px;" alt="Udecia">
+                    <div><b>Tu Mapa de 4 Semanas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Aquí verás tu progreso. Debes ir superando las actividades de cada semana para avanzar.</span></div>
+                  </div>`
+        },
+        {
+          element: document.querySelector('.nav-stats'),
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
+                    <div><b>Estadísticas Rápidas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">En la barra superior siempre podrás ver tu Nivel actual, tus días de Racha y tus Monedas.</span></div>
+                  </div>`,
+          position: 'bottom'
+        },
+        {
+          element: document.querySelector('.stats-sidebar .stat-card:nth-child(1)'),
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
+                    <div><b>Tu Experiencia (XP)</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">¡Ganas XP por cada respuesta correcta! Al acumular 100 XP subirás de nivel.</span></div>
+                  </div>`,
+          position: 'left'
+        },
+        {
+          element: document.querySelector('.stats-sidebar .stat-card.streak'),
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/asombrada1.png" style="width:70px;" alt="Udecia">
+                    <div><b>¡No pierdas tu Racha!</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Este fuego 🔥 cuenta los días seguidos que has entrado. ¡Si fallas un día se apagará!</span></div>
+                  </div>`,
+          position: 'left'
+        },
+        {
+          element: document.querySelector('.stats-sidebar .stat-card.coins'),
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
+                    <div><b>Tus Monedas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Las usarás en la tienda para comprar ayudas o pistas cuando un examen esté muy difícil.</span></div>
+                  </div>`,
+          position: 'left'
+        },
+        {
+          element: document.querySelector('[href="/student/tutorial"]'),
+          intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
+                    <img src="/img/mascota/explicar1.png" style="width:70px;" alt="Udecia">
+                    <div><b>Tutorial General</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Si quieres ver las diapositivas del tutorial completo, puedes presionar este botón en cualquier momento.</span></div>
+                  </div>`,
+          position: 'bottom'
+        }
+      ]
+    });
+    intro.start();
+  }
+
+  // Auto-start tour if it's the user's first time
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!localStorage.getItem('udeciaHomeTourDone')) {
+      setTimeout(() => {
+        startUdeciaTour();
+        localStorage.setItem('udeciaHomeTourDone', 'true');
+      }, 1000);
+    }
+  });
+</script>
+
 <%- include('../partials/footer') %>
