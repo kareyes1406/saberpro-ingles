@@ -114,32 +114,7 @@
   .introjs-button { background: var(--accent-purple); color: white; border: none; text-shadow: none; border-radius: 6px; }
   .introjs-button:hover { background: #9333ea; color: white; }
   .introjs-skipbutton { color: var(--text-muted); }
-  
-  .tour-btn {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: var(--bg-surface);
-    border: 2px solid var(--accent-cyan);
-    color: var(--accent-cyan);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    z-index: 100;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .tour-btn:hover { background: rgba(6, 182, 212, 0.1); transform: translateY(-2px); }
 </style>
-
-<button class="tour-btn" onclick="startUdeciaTour()">
-  <img src="/img/mascota/feliz1.png" style="width:24px; height:24px;" alt="Udecia">
-  ¿Necesitas un recorrido?
-</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
 <script>
@@ -211,13 +186,19 @@
     intro.start();
   }
 
-  // Auto-start tour if it's the user's first time
+  // Auto-start tour if it's the user's first time or requested via URL
   window.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('udeciaHomeTourDone')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('tour') || !localStorage.getItem('udeciaHomeTourDone')) {
       setTimeout(() => {
         startUdeciaTour();
         localStorage.setItem('udeciaHomeTourDone', 'true');
-      }, 1000);
+        
+        // Remove ?tour=1 from URL so it doesn't loop on refresh
+        if (urlParams.has('tour')) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }, 500);
     }
   });
 </script>
