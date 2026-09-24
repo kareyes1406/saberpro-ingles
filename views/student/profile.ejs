@@ -2,7 +2,7 @@
 
 <div style="max-width: 900px; margin: 0 auto; padding: 2rem 1rem;">
     <!-- Profile Header Cover -->
-    <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 2.5rem; display: flex; gap: 2rem; align-items: center; margin-bottom: 2rem; position: relative; overflow: hidden;">
+    <div id="profileHeaderCard" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 2.5rem; display: flex; gap: 2rem; align-items: center; margin-bottom: 2rem; position: relative; overflow: hidden;">
         <div style="font-size: 5rem; background: rgba(255,255,255,0.05); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-cyan);">
             🧑‍🎓
         </div>
@@ -114,7 +114,7 @@
     </div>
 
     <!-- Badges Grid -->
-    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:2rem;">
+    <div id="profileBadgesCard" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:2rem;">
         <h2 style="margin-top:0; margin-bottom:1.5rem; font-size:1.5rem; display:flex; align-items:center; gap:0.5rem;">
             🏆 Mis Medallas Ganadas <span style="font-size:0.9rem; color:var(--accent-cyan); font-weight:normal;">(<%= badges.length %>)</span>
         </h2>
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
       text: 'Aquí podrás ver todos los detalles de tu progreso, editar tus datos y consultar tu reporte de IA.'
     },
     {
-      el: '#displayFullName',
+      el: '#profileHeaderCard',
       img: '/img/mascota/explicar1.png',
       title: 'Tus Datos',
       text: 'Aquí está tu información personal. Puedes usar el botón de "Editar Perfil" si necesitas actualizar tu nombre o contraseña.'
@@ -284,10 +284,16 @@ document.addEventListener('DOMContentLoaded', function() {
       text: 'Este radar muestra tu nivel de dominio en Vocabulario, Comprensión Lectora, Pragmática y Gramática.'
     },
     {
-      el: 'h2:contains("Diagnóstico de UDECIA")', // Let's use a simpler selector if possible. Let's just point to the whole ai panel.
+      el: 'h2:contains("Diagnóstico de UDECIA")', // Fallback, se reemplaza dinámicamente en el DOMContentLoaded
       img: '/img/mascota/explicar2.png',
       title: 'Reporte de Inteligencia Artificial',
       text: 'Basado en tus respuestas, la Inteligencia Artificial de UDECIA genera este reporte detallado para decirte en qué debes mejorar.'
+    },
+    {
+      el: '#profileBadgesCard',
+      img: '/img/mascota/celebrar1.png',
+      title: 'Tus Medallas',
+      text: 'Aquí se coleccionan tus logros. Cada vez que superes un desafío importante, ganarás una medalla para demostrar tu avance.'
     }
   ];
 
