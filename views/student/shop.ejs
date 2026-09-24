@@ -143,12 +143,9 @@
   ];
 
   window.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('udeciaShopTourDone')) {
-      setTimeout(() => {
-        startUdeciaTour(shopTourSteps);
-        localStorage.setItem('udeciaShopTourDone', 'true');
-      }, 800);
-    }
+    setTimeout(() => {
+      startUdeciaTour(shopTourSteps);
+    }, 800);
   });
 </script>
 

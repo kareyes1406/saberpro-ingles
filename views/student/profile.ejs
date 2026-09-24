@@ -295,17 +295,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Para simplificar el selector del reporte de IA:
     const aiPanel = document.getElementById('aiRadarChart') ? document.getElementById('aiRadarChart').parentElement.parentElement : null;
     if(aiPanel) {
-        profileTourSteps[4].el = null; // Lo dejamos sin resaltar si no podemos darle ID, o le agregamos un id.
+        profileTourSteps[4].el = null; 
         aiPanel.id = 'ai-assistant-panel';
         profileTourSteps[4].el = '#ai-assistant-panel';
     }
 
-    if (!localStorage.getItem('udeciaProfileTourDone')) {
-      setTimeout(() => {
-        startUdeciaTour(profileTourSteps);
-        localStorage.setItem('udeciaProfileTourDone', 'true');
-      }, 800);
-    }
+    setTimeout(() => {
+      startUdeciaTour(profileTourSteps);
+    }, 800);
   });
 </script>
 

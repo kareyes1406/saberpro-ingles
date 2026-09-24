@@ -67,7 +67,10 @@
     <h3 id="tour-title" style="margin-top:0; margin-bottom:8px; color:var(--accent-cyan); font-size:1.3rem;">Título</h3>
     <p id="tour-text" style="font-size:1rem; margin-bottom:15px; color:var(--text-primary); line-height:1.4;">Texto</p>
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <button id="tour-prev" class="btn-secondary" style="padding:0.4rem 1rem; font-size:0.9rem;" onclick="tourChangeStep(-1)">Anterior</button>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <button id="tour-skip" style="background:none; border:none; color:var(--text-muted); text-decoration:underline; cursor:pointer; font-size:0.85rem; padding:0.4rem;" onclick="closeTour()">Saltar</button>
+        <button id="tour-prev" class="btn-secondary" style="padding:0.4rem 1rem; font-size:0.9rem;" onclick="tourChangeStep(-1)">Anterior</button>
+      </div>
       <span id="tour-progress" style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">1/5</span>
       <button id="tour-next" class="btn-primary" style="padding:0.4rem 1rem; font-size:0.9rem;" onclick="tourChangeStep(1)">Siguiente</button>
     </div>
