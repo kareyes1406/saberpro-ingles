@@ -350,6 +350,10 @@ class ProfessorController {
             const clustered = MLService.kMeansClustering(studentsForCluster.recordset, 3);
             const thisStudentCluster = clustered.find(s => s.UserID === targetUserId) || { clusterName: 'Sin datos', clusterColor: '#6b7280' };
 
+            // ── NEW: Obtener reporte de la IA (NLG Expert System) ──
+            const AIAssistantService = require('../services/aiAssistantService');
+            const aiReport = await AIAssistantService.generatePersonalizedReport(targetUserId);
+
             res.render('professor/student_detail', {
                 title: `Progreso de ${student.FirstName} ${student.LastName}`,
                 cssFile: 'admin.css',
@@ -362,6 +366,7 @@ class ProfessorController {
                 logisticResult,
                 clusterInfo: thisStudentCluster,
                 projectedSaberPro: Math.round((linearResult.projectedScore / 100) * 300) || Math.round((avgScore / 100) * 300),
+                aiReport,
                 user: req.session.user
             });
         } catch (error) {

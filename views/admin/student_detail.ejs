@@ -152,6 +152,21 @@
     </div>
   </div>
 
+  <!-- AI Diagnostic Report -->
+  <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1.5rem; margin-bottom:2rem; display:flex; gap:2rem; align-items:flex-start; flex-wrap:wrap;">
+    <div style="flex-shrink:0; width:68px; height:68px; border-radius:50%; background:rgba(124,58,237,0.15); border:2px solid var(--accent-purple); display:flex; align-items:center; justify-content:center; box-shadow:0 0 15px rgba(124,58,237,0.3);">
+        <img src="/img/mascota/explicar1.png" alt="UDECIA" style="width:50px; height:50px; object-fit:contain;">
+    </div>
+    <div style="flex-grow:1;">
+      <h3 style="margin:0 0 1rem; color:var(--accent-purple); display:flex; align-items:center; gap:0.5rem;">
+        🤖 Diagnóstico Pedagógico de IA (Sistema Experto)
+      </h3>
+      <div style="background:var(--bg-surface); padding:1.5rem; border-radius:12px; border:1px solid rgba(255,255,255,0.05); font-size:0.95rem; line-height:1.6; color:var(--text-primary);">
+        <%- aiReport.reportText %>
+      </div>
+    </div>
+  </div>
+
   <!-- Weekly Progress Table -->
   <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1.5rem;">
     <h3 style="margin:0 0 1rem; color:var(--accent-cyan);">📅 Progreso Semana a Semana</h3>

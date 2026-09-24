@@ -185,39 +185,72 @@ class AIAssistantService {
             }
         });
 
-        // 9. BUILD THE REPORT TEXT
-        let reportText = `¡Hola! Soy tu asistente IA de aprendizaje. Mi algoritmo te clasifica como un ${gamifiedRank}. \n\n`;
+        // 9. ADVANCED NLG EXPERT SYSTEM (Generación de Lenguaje Natural)
         
-        reportText += `🎯 Proyección Saber Pro: Analizando tu tendencia histórica, tu puntaje proyectado es ${projectedSaberPro} / 300 en el examen final. \n\n`;
-        
-        reportText += `Además, calculo que tienes un ${logisticResult.probability}% de probabilidad de superar el umbral de aprobación. ${logisticResult.recommendation}\n\n`;
-        
-        if (Object.keys(percentiles).length > 0) {
-            reportText += `📊 Comparativa de Nivel (Top %):\n`;
-            Object.entries(percentiles).forEach(([type, topPct]) => {
-                const typeName = typeNames[type];
-                let emoji = topPct <= 20 ? '🔥' : topPct <= 50 ? '👍' : '⚠️';
-                reportText += `- En ${typeName} estás en el Top ${topPct}% de toda la clase. ${emoji}\n`;
-            });
-        }
-        
-        let weakestType = 'Vocabulary';
-        let lowestScore = 100;
-        ['Vocabulary', 'Reading', 'Pragmatics', 'Grammar'].forEach(type => {
-            if (currentAverages[type] && currentAverages[type].score < lowestScore) {
-                lowestScore = currentAverages[type].score;
-                weakestType = type;
-            }
-        });
-        
-        reportText += `\n💡 Siguiente Paso Recomendado: Te sugiero enfocarte en ${typeNames[weakestType]}. Es el área donde más rápido puedes subir de nivel.\n`;
+        // Determinar fortalezas y debilidades reales
+        const sortedTypes = ['Vocabulary', 'Reading', 'Pragmatics', 'Grammar']
+            .filter(t => currentAverages[t])
+            .map(t => ({
+                type: t,
+                name: typeNames[t],
+                score: currentAverages[t].score,
+                percentile: percentiles[t] || 50
+            }))
+            .sort((a, b) => b.score - a.score);
 
-        if (logisticResult.riskFactors && logisticResult.riskFactors.length > 0) {
-            reportText += `\n🚨 Factores a mejorar (Mi radar ha detectado):\n`;
-            logisticResult.riskFactors.forEach(rf => {
-                reportText += `- ${rf.factor}\n`;
-            });
+        const bestType = sortedTypes.length > 0 ? sortedTypes[0] : null;
+        const weakestTypeData = sortedTypes.length > 0 ? sortedTypes[sortedTypes.length - 1] : null;
+
+        // Recuperar nombre del estudiante
+        const userQuery = await executeQuery('SELECT FirstName FROM Users WHERE UserID = @UserID', [{ name: 'UserID', type: sql.Int, value: userId }]);
+        const studentName = userQuery.recordset[0]?.FirstName || 'Estudiante';
+
+        let reportText = "";
+
+        // Párrafo 1: Saludo y Estado General
+        const greetingOpts = [
+            `¡Hola <strong>${studentName}</strong>! He analizado a fondo tu rendimiento y patrones de aprendizaje.`,
+            `¡Saludos <strong>${studentName}</strong>! Como tu tutor virtual de IA, he procesado tus últimas métricas.`,
+            `¡Qué tal <strong>${studentName}</strong>! He escaneado tu progreso cognitivo en la plataforma.`
+        ];
+        const randomGreeting = greetingOpts[Math.floor(Math.random() * greetingOpts.length)];
+
+        let statusSentence = "";
+        if (logisticResult.probability >= 80) {
+            statusSentence = `Estás en el camino perfecto para triunfar. Mi algoritmo te ha clasificado en el codiciado rango de <strong>${gamifiedRank}</strong>, lo que indica un dominio sobresaliente. De hecho, estimo un <strong>${logisticResult.probability}% de probabilidad</strong> de que superes la prueba Saber Pro con gran holgura.`;
+        } else if (logisticResult.probability >= 60) {
+            statusSentence = `Mantienes un ritmo sólido y te ubicas como <strong>${gamifiedRank}</strong>. Con un <strong>${logisticResult.probability}% de probabilidad de aprobación</strong>, tienes buenas bases, pero aún hay pequeños detalles técnicos que debemos afinar para asegurar ese puntaje perfecto.`;
+        } else {
+            statusSentence = `Actualmente te encuentras en la categoría de <strong>${gamifiedRank}</strong>. Las matemáticas de mi motor predicen un <strong>${logisticResult.probability}% de probabilidad</strong> de éxito en este momento. ¡Pero no te preocupes! Precisamente para eso estoy aquí, tenemos tiempo de sobra para revertir estos números si atacamos las áreas clave.`;
         }
+
+        reportText += `<p style="margin-bottom: 1rem;">${randomGreeting} ${statusSentence}</p>`;
+
+        // Párrafo 2: Proyección y Competencias
+        let projectionSentence = `Si presentaras el examen nacional hoy mismo, mi modelo proyecta que obtendrías aproximadamente <strong>${projectedSaberPro} puntos sobre 300</strong>. `;
+        if (bestType && weakestTypeData && bestType.type !== weakestTypeData.type) {
+            projectionSentence += `Para subir esta métrica, veamos tu mapa de habilidades: Tu mayor talento natural es <strong>${bestType.name}</strong> (¡te encuentras en el top ${bestType.percentile}% superior de la clase!). Sin embargo, la barrera que está frenando tu puntaje global es <strong>${weakestTypeData.name}</strong>.`;
+        }
+        reportText += `<p style="margin-bottom: 1rem;">${projectionSentence}</p>`;
+
+        // Párrafo 3: Análisis Táctico y Factores de Riesgo
+        if (logisticResult.riskFactors && logisticResult.riskFactors.length > 0) {
+            reportText += `<p style="margin-bottom: 0.5rem;">Mi radar ha detectado ciertos patrones en tu comportamiento que podrían frenar tu aprendizaje:</p><ul style="margin-bottom: 1rem; padding-left: 1.5rem;">`;
+            logisticResult.riskFactors.forEach(rf => {
+                reportText += `<li style="margin-bottom: 0.25rem;">⚠️ <strong>${rf.factor}:</strong> Te recomiendo tomarte tu tiempo en cada actividad. El cerebro aprende mejor sin presión.</li>`;
+            });
+            reportText += `</ul>`;
+        } else {
+            reportText += `<p style="margin-bottom: 1rem;">🌟 <strong>Hábitos de Estudio:</strong> He revisado la frecuencia de tus intentos y el tiempo de respuesta. ¡Estás demostrando unos hábitos de estudio de primer nivel! Tu constancia está creando conexiones neuronales muy fuertes en el idioma.</p>`;
+        }
+
+        // Párrafo 4: Recomendación Final
+        const finalAdvices = [
+            `Te propongo un reto: dedica tus próximos 15 minutos en la plataforma exclusivamente a ejercicios de <strong>${weakestTypeData ? weakestTypeData.name : 'tu módulo actual'}</strong>. ¡Nos vemos en la cima!`,
+            `Abre el mapa interactivo y busca específicamente el próximo desafío de <strong>${weakestTypeData ? weakestTypeData.name : 'inglés'}</strong>. ¡Es el camino más rápido para subir de nivel!`,
+            `Sigue sumando experiencia. ¡Recuerda que cada racha ganada son puntos reales que sumarás el día del examen!`
+        ];
+        reportText += `<p style="margin-bottom: 0;"><strong>Mi plan táctico para ti:</strong> ${finalAdvices[Math.floor(Math.random() * finalAdvices.length)]}</p>`;
 
         return {
             reportText,
@@ -229,8 +262,8 @@ class AIAssistantService {
             gamifiedRank,
             clusterInfo: thisStudentCluster,
             percentiles,
-            strengths: [],
-            weaknesses: []
+            strengths: bestType ? [bestType.type] : [],
+            weaknesses: weakestTypeData ? [weakestTypeData.type] : []
         };
     }
 }
