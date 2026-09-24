@@ -256,4 +256,57 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<%- include('../partials/udecia-tour') %>
+<script>
+  const profileTourSteps = [
+    {
+      el: null,
+      img: '/img/mascota/saludar.png',
+      title: '¡Bienvenido a tu Perfil!',
+      text: 'Aquí podrás ver todos los detalles de tu progreso, editar tus datos y consultar tu reporte de IA.'
+    },
+    {
+      el: '#displayFullName',
+      img: '/img/mascota/explicar1.png',
+      title: 'Tus Datos',
+      text: 'Aquí está tu información personal. Puedes usar el botón de "Editar Perfil" si necesitas actualizar tu nombre o contraseña.'
+    },
+    {
+      el: '.stat-tooltip-wrapper', // Selects the first stat card
+      img: '/img/mascota/celebrar1.png',
+      title: 'Estadísticas Generales',
+      text: 'Estas tarjetas resumen tu Nivel, Racha actual, Monedas acumuladas y tu porcentaje de actividades completadas.'
+    },
+    {
+      el: '#aiRadarChart',
+      img: '/img/mascota/pensar1.png',
+      title: 'Gráfico Radial de Habilidades',
+      text: 'Este radar muestra tu nivel de dominio en Vocabulario, Comprensión Lectora, Pragmática y Gramática.'
+    },
+    {
+      el: 'h2:contains("Diagnóstico de UDECIA")', // Let's use a simpler selector if possible. Let's just point to the whole ai panel.
+      img: '/img/mascota/explicar2.png',
+      title: 'Reporte de Inteligencia Artificial',
+      text: 'Basado en tus respuestas, la Inteligencia Artificial de UDECIA genera este reporte detallado para decirte en qué debes mejorar.'
+    }
+  ];
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // Para simplificar el selector del reporte de IA:
+    const aiPanel = document.getElementById('aiRadarChart') ? document.getElementById('aiRadarChart').parentElement.parentElement : null;
+    if(aiPanel) {
+        profileTourSteps[4].el = null; // Lo dejamos sin resaltar si no podemos darle ID, o le agregamos un id.
+        aiPanel.id = 'ai-assistant-panel';
+        profileTourSteps[4].el = '#ai-assistant-panel';
+    }
+
+    if (!localStorage.getItem('udeciaProfileTourDone')) {
+      setTimeout(() => {
+        startUdeciaTour(profileTourSteps);
+        localStorage.setItem('udeciaProfileTourDone', 'true');
+      }, 800);
+    }
+  });
+</script>
+
 <%- include('../partials/footer') %>

@@ -113,4 +113,43 @@
     </div>
 </div>
 
+<%- include('../partials/udecia-tour') %>
+<script>
+  const shopTourSteps = [
+    {
+      el: null,
+      img: '/img/mascota/saludar.png',
+      title: '¡Bienvenido a la Tienda!',
+      text: 'Aquí podrás invertir las monedas que tanto te ha costado ganar en ventajas exclusivas para tu aprendizaje.'
+    },
+    {
+      el: '.coin-balance',
+      img: '/img/mascota/celebrar1.png',
+      title: 'Tus Monedas',
+      text: 'Este es tu saldo actual. Recuerda que ganas monedas por cada actividad que completas con éxito.'
+    },
+    {
+      el: '.shop-grid',
+      img: '/img/mascota/explicar1.png',
+      title: 'Catálogo de Artículos',
+      text: 'Aquí verás los potenciadores disponibles. Puedes comprar multiplicadores de XP o Escudos para proteger tu racha en caso de que no puedas ingresar un día.'
+    },
+    {
+      el: '#inventoryList',
+      img: '/img/mascota/explicar2.png',
+      title: 'Tu Inventario',
+      text: 'Todos los artículos que compres aparecerán aquí abajo. ¡No olvides activarlos cuando vayas a utilizarlos!'
+    }
+  ];
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!localStorage.getItem('udeciaShopTourDone')) {
+      setTimeout(() => {
+        startUdeciaTour(shopTourSteps);
+        localStorage.setItem('udeciaShopTourDone', 'true');
+      }, 800);
+    }
+  });
+</script>
+
 <%- include('../partials/footer') %>
