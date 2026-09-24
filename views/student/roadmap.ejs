@@ -106,11 +106,27 @@
 <!-- Intro.js Tour Implementation -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
 <style>
-  .introjs-tooltip { border-radius: 12px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--accent-cyan); max-width: 350px; }
-  .introjs-arrow.top { border-bottom-color: var(--accent-cyan); }
-  .introjs-arrow.bottom { border-top-color: var(--accent-cyan); }
-  .introjs-arrow.left { border-right-color: var(--accent-cyan); }
-  .introjs-arrow.right { border-left-color: var(--accent-cyan); }
+  .introjs-tooltip { 
+    border-radius: 12px; 
+    background: var(--bg-surface) !important; 
+    color: var(--text-primary) !important; 
+    border: 1px solid var(--accent-cyan); 
+    max-width: 350px;
+    box-sizing: border-box;
+  }
+  /* Forzar que el tooltip flotante siempre esté en el centro de la pantalla */
+  .introjs-tooltip.introjs-floating {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    bottom: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+  }
+  .introjs-arrow.top { border-bottom-color: var(--accent-cyan) !important; }
+  .introjs-arrow.bottom { border-top-color: var(--accent-cyan) !important; }
+  .introjs-arrow.left { border-right-color: var(--accent-cyan) !important; }
+  .introjs-arrow.right { border-left-color: var(--accent-cyan) !important; }
   .introjs-button { background: var(--accent-purple); color: white; border: none; text-shadow: none; border-radius: 6px; }
   .introjs-button:hover { background: #9333ea; color: white; }
   .introjs-skipbutton { color: var(--text-muted); }
@@ -127,54 +143,48 @@
       skipLabel: 'Saltar',
       showProgress: true,
       showBullets: false,
+      tooltipPosition: 'auto',
       steps: [
         {
-          element: document.querySelector('.roadmap-container h1'),
           intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
                     <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
                     <div><b>¡Hola! Soy UDECIA.</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Te daré un recorrido rápido por esta pantalla. ¡Haz clic en Siguiente!</span></div>
-                  </div>`,
-          position: 'bottom'
+                  </div>`
         },
         {
-          element: document.querySelector('.nodes-grid'),
+          element: document.querySelector('.roadmap-container'),
           intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
                     <img src="/img/mascota/explicar1.png" style="width:70px;" alt="Udecia">
                     <div><b>Tu Mapa de 4 Semanas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Aquí verás tu progreso. Debes ir superando las actividades de cada semana para avanzar.</span></div>
-                  </div>`,
-          position: 'right'
+                  </div>`
         },
         {
           element: document.querySelector('.nav-stats'),
           intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
                     <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
                     <div><b>Estadísticas Rápidas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">En la barra superior siempre podrás ver tu Nivel actual, tus días de Racha y tus Monedas.</span></div>
-                  </div>`,
-          position: 'bottom'
+                  </div>`
         },
         {
           element: document.getElementById('xpValue') ? document.getElementById('xpValue').parentElement : document.querySelector('.stats-sidebar'),
           intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
                     <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
                     <div><b>Tu Experiencia (XP)</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">¡Ganas XP por cada respuesta correcta! Al acumular 100 XP subirás de nivel.</span></div>
-                  </div>`,
-          position: 'left'
+                  </div>`
         },
         {
           element: document.getElementById('streakValue') ? document.getElementById('streakValue').parentElement : document.querySelector('.stats-sidebar'),
           intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
                     <img src="/img/mascota/asombrada1.png" style="width:70px;" alt="Udecia">
                     <div><b>¡No pierdas tu Racha!</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Este fuego 🔥 cuenta los días seguidos que has entrado. ¡Si fallas un día se apagará!</span></div>
-                  </div>`,
-          position: 'left'
+                  </div>`
         },
         {
           element: document.getElementById('coinsValue') ? document.getElementById('coinsValue').parentElement : document.querySelector('.stats-sidebar'),
           intro: `<div style="display:flex;align-items:center;gap:15px;text-align:left;">
                     <img src="/img/mascota/feliz1.png" style="width:70px;" alt="Udecia">
                     <div><b>Tus Monedas</b><br><span style="font-size:0.9rem;color:var(--text-secondary);">Las usarás en la tienda para comprar ayudas o pistas cuando un examen esté muy difícil.</span></div>
-                  </div>`,
-          position: 'left'
+                  </div>`
         }
       ]
     });
