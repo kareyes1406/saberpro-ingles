@@ -214,16 +214,44 @@ class AIAssistantService {
         const userQuery = await executeQuery('SELECT FirstName FROM Users WHERE UserID = @UserID', [{ name: 'UserID', type: sql.Int, value: userId }]);
         const studentName = userQuery.recordset[0]?.FirstName || 'Estudiante';
 
+        // Helper para aleatoriedad
+        const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
         let reportText = "";
 
         if (progress.length === 0) {
             // Reporte para estudiante recién llegado (sólo pre-test)
-            reportText = `<p style="margin-bottom: 1rem;">¡Hola <strong>${studentName}</strong>! Veo que has completado tu <strong>Prueba Diagnóstica</strong>, pero aún no has iniciado tu entrenamiento en los módulos.</p>`;
-            reportText += `<p style="margin-bottom: 1rem;">Basado exclusivamente en tu diagnóstico, proyecto que obtendrías aproximadamente <strong>${projectedSaberPro} puntos</strong> en la prueba real. Tienes una probabilidad inicial de éxito del <strong>${logisticResult.probability}%</strong>.</p>`;
+            const intros = [
+                `¡Hola <strong>${studentName}</strong>! Veo que has completado tu <strong>Prueba Diagnóstica</strong>, pero aún no has iniciado tu entrenamiento en los módulos.`,
+                `¡Bienvenido <strong>${studentName}</strong>! Tu diagnóstico inicial está listo, aunque noto que todavía no has empezado los desafíos de la plataforma.`,
+                `¡Saludos <strong>${studentName}</strong>! Ya tengo los resultados de tu evaluación previa, ahora solo falta que comiences a sumar experiencia en los minijuegos.`
+            ];
+            
+            const projections = [
+                `Basado exclusivamente en tu diagnóstico, proyecto que obtendrías aproximadamente <strong>${projectedSaberPro} puntos</strong> en la prueba real. Tienes una probabilidad inicial de éxito del <strong>${logisticResult.probability}%</strong>.`,
+                `Según este primer escaneo, mi algoritmo estima un puntaje de <strong>${projectedSaberPro} puntos sobre 300</strong> en el examen nacional, con un <strong>${logisticResult.probability}%</strong> de opciones de aprobar.`,
+                `Si el examen del ICFES fuera hoy, mis cálculos te situarían en <strong>${projectedSaberPro} puntos</strong>. Tienes un <strong>${logisticResult.probability}%</strong> de probabilidad de superarlo exitosamente.`
+            ];
+
+            reportText += `<p style="margin-bottom: 1rem;">${pickRandom(intros)}</p>`;
+            reportText += `<p style="margin-bottom: 1rem;">${pickRandom(projections)}</p>`;
+
             if (bestType && weakestTypeData && bestType.type !== weakestTypeData.type) {
-                reportText += `<p style="margin-bottom: 1rem;">Tu mapa de habilidades inicial revela que tienes potencial en <strong>${bestType.name}</strong>, pero te recomiendo que nuestra máxima prioridad sea reforzar <strong>${weakestTypeData.name}</strong> para asegurar tu aprobación.</p>`;
+                const skills = [
+                    `Tu mapa de habilidades revela que tienes potencial en <strong>${bestType.name}</strong>, pero te recomiendo que nuestra prioridad sea reforzar <strong>${weakestTypeData.name}</strong>.`,
+                    `Tus bases en <strong>${bestType.name}</strong> son prometedoras; sin embargo, el análisis muestra que debes enfocar tu energía en mejorar <strong>${weakestTypeData.name}</strong>.`,
+                    `Destacas inicialmente en <strong>${bestType.name}</strong>. A pesar de ello, el principal obstáculo a superar será tu rendimiento en <strong>${weakestTypeData.name}</strong>.`
+                ];
+                reportText += `<p style="margin-bottom: 1rem;">${pickRandom(skills)}</p>`;
             }
-            reportText += `<p style="margin-bottom: 0;"><strong>Mi consejo inmediato:</strong> ¡Ve al mapa interactivo y comienza tu primer desafío ahora mismo! Entre más juegues, más preciso será mi análisis sobre tu aprendizaje real.</p>`;
+
+            const advices = [
+                `<strong>Mi consejo inmediato:</strong> ¡Ve al mapa interactivo y comienza tu primer desafío ahora mismo! Entre más juegues, más preciso será mi análisis.`,
+                `<strong>¿Qué sigue?</strong> Abre el mapa de módulos y supera tu primera lección para que empiece a medir tu verdadero potencial de aprendizaje.`,
+                `<strong>Tu próximo paso:</strong> Dirígete a la ruta de aprendizaje y completa tu primera actividad. ¡Demuéstrame de qué eres capaz!`
+            ];
+            reportText += `<p style="margin-bottom: 0;">${pickRandom(advices)}</p>`;
+
         } else {
             // Reporte completo para estudiantes activos
             const greetingOpts = [
@@ -231,41 +259,73 @@ class AIAssistantService {
                 `¡Saludos <strong>${studentName}</strong>! Como tu tutor virtual de IA, he procesado tus últimas métricas.`,
                 `¡Qué tal <strong>${studentName}</strong>! He escaneado tu progreso cognitivo en la plataforma.`
             ];
-            const randomGreeting = greetingOpts[Math.floor(Math.random() * greetingOpts.length)];
 
-            let statusSentence = "";
+            let statusOpts = [];
             if (logisticResult.probability >= 80) {
-                statusSentence = `Estás en el camino perfecto para triunfar. Has alcanzado el rango de <strong>${gamifiedRank}</strong>, lo que indica un dominio excelente. Estimo un <strong>${logisticResult.probability}% de probabilidad</strong> de que superes la prueba Saber Pro con holgura.`;
+                statusOpts = [
+                    `Estás en el camino perfecto para triunfar. Has alcanzado el rango de <strong>${gamifiedRank}</strong>, lo que indica un dominio excelente. Estimo un <strong>${logisticResult.probability}% de probabilidad</strong> de que superes la prueba Saber Pro con holgura.`,
+                    `¡Tus métricas son sobresalientes! Actualmente ostentas el título de <strong>${gamifiedRank}</strong>. Los datos me dan un <strong>${logisticResult.probability}% de certeza</strong> de que aprobarás el examen sin problemas.`,
+                    `Demuestras un rendimiento de élite. Tu nivel como <strong>${gamifiedRank}</strong> respalda mi predicción: tienes un <strong>${logisticResult.probability}% de posibilidades</strong> de obtener un gran resultado nacional.`
+                ];
             } else if (logisticResult.probability >= 60) {
-                statusSentence = `Mantienes un ritmo sólido y te ubicas como <strong>${gamifiedRank}</strong>. Con un <strong>${logisticResult.probability}% de probabilidad de aprobación</strong>, tienes buenas bases, pero aún hay detalles técnicos que debemos afinar.`;
+                statusOpts = [
+                    `Mantienes un ritmo sólido y te ubicas como <strong>${gamifiedRank}</strong>. Con un <strong>${logisticResult.probability}% de probabilidad de aprobación</strong>, tienes buenas bases, pero aún hay detalles técnicos que debemos afinar.`,
+                    `Vas por buen camino. Tu clasificación de <strong>${gamifiedRank}</strong> y tu probabilidad del <strong>${logisticResult.probability}%</strong> muestran que estamos cerca de la meta, aunque no podemos confiarnos.`,
+                    `Tu progreso es constante. Eres un <strong>${gamifiedRank}</strong> con un <strong>${logisticResult.probability}% de opciones de pasar</strong>. Sigamos puliendo tus conocimientos para asegurar ese resultado.`
+                ];
             } else {
-                statusSentence = `Actualmente te encuentras en la categoría de <strong>${gamifiedRank}</strong>. Las matemáticas de mi motor predicen un <strong>${logisticResult.probability}% de probabilidad</strong> de éxito en este momento. ¡Pero no te preocupes! Tenemos tiempo para revertir estos números atacando las áreas clave.`;
+                statusOpts = [
+                    `Actualmente te encuentras en la categoría de <strong>${gamifiedRank}</strong>. Las matemáticas de mi motor predicen un <strong>${logisticResult.probability}% de probabilidad</strong> de éxito. ¡Pero no te preocupes! Tenemos tiempo para revertir estos números atacando las áreas clave.`,
+                    `Estás catalogado como <strong>${gamifiedRank}</strong>. Con un <strong>${logisticResult.probability}% de estimación de éxito</strong>, mi diagnóstico es que necesitamos intensificar tu entrenamiento de inmediato para subir ese número.`,
+                    `Tu nivel actual es <strong>${gamifiedRank}</strong>. La proyección del <strong>${logisticResult.probability}% de probabilidad</strong> nos indica que estamos en zona de riesgo. Necesitamos cambiar tu estrategia de estudio desde hoy.`
+                ];
             }
 
-            reportText += `<p style="margin-bottom: 1rem;">${randomGreeting} ${statusSentence}</p>`;
+            reportText += `<p style="margin-bottom: 1rem;">${pickRandom(greetingOpts)} ${pickRandom(statusOpts)}</p>`;
 
-            let projectionSentence = `Si presentaras el examen nacional hoy, mi modelo proyecta que obtendrías aproximadamente <strong>${projectedSaberPro} puntos sobre 300</strong>. `;
+            let projOpts = [
+                `Si presentaras el examen nacional hoy, mi modelo proyecta que obtendrías aproximadamente <strong>${projectedSaberPro} puntos sobre 300</strong>. `,
+                `De mantenerse esta tendencia, tu resultado final estimado rondaría los <strong>${projectedSaberPro} puntos sobre 300</strong>. `,
+                `Mi red neuronal proyecta que tu nota en el ICFES sería de unos <strong>${projectedSaberPro}/300</strong> bajo tus condiciones actuales. `
+            ];
+            
+            let projectionSentence = pickRandom(projOpts);
             if (bestType && weakestTypeData && bestType.type !== weakestTypeData.type) {
-                projectionSentence += `Para subir esta métrica, veamos tus habilidades: Tu mayor talento es <strong>${bestType.name}</strong> (top ${bestType.percentile}% de la clase). Sin embargo, la barrera que frena tu puntaje global es <strong>${weakestTypeData.name}</strong>.`;
+                const mapOpts = [
+                    `Veamos tus habilidades: Tu mayor talento es <strong>${bestType.name}</strong> (top ${bestType.percentile}% de la clase). Sin embargo, la barrera que frena tu puntaje global es <strong>${weakestTypeData.name}</strong>.`,
+                    `Al desglosar tu radar: Eres muy fuerte en <strong>${bestType.name}</strong>, superando al ${100 - bestType.percentile}% de estudiantes. Tu talón de Aquiles, y donde debes enfocarte, es <strong>${weakestTypeData.name}</strong>.`,
+                    `Analizando tus competencias: Destacas notablemente en <strong>${bestType.name}</strong>. No obstante, para subir de nivel globalmente debes superar tu deficiencia en <strong>${weakestTypeData.name}</strong>.`
+                ];
+                projectionSentence += pickRandom(mapOpts);
             }
             reportText += `<p style="margin-bottom: 1rem;">${projectionSentence}</p>`;
 
             if (logisticResult.riskFactors && logisticResult.riskFactors.length > 0) {
-                reportText += `<p style="margin-bottom: 0.5rem;">Mi radar ha detectado patrones en tu comportamiento que podrían frenar tu avance:</p><ul style="margin-bottom: 1rem; padding-left: 1.5rem;">`;
+                const riskIntros = [
+                    `Mi radar ha detectado patrones en tu comportamiento que podrían frenar tu avance:`,
+                    `He encontrado algunos factores de riesgo en tus hábitos que debes corregir de inmediato:`,
+                    `Presta mucha atención a estas alertas que mi algoritmo detectó en tu forma de jugar:`
+                ];
+                reportText += `<p style="margin-bottom: 0.5rem;">${pickRandom(riskIntros)}</p><ul style="margin-bottom: 1rem; padding-left: 1.5rem;">`;
                 logisticResult.riskFactors.forEach(rf => {
                     reportText += `<li style="margin-bottom: 0.25rem;">⚠️ <strong>${rf.factor}:</strong> Intenta ajustar esto para que tu cerebro asimile mejor la información.</li>`;
                 });
                 reportText += `</ul>`;
             } else {
-                reportText += `<p style="margin-bottom: 1rem;">🌟 <strong>Hábitos de Estudio:</strong> ¡Estás demostrando unos hábitos de estudio de primer nivel! Tu constancia está creando conexiones neuronales muy fuertes en el idioma.</p>`;
+                const habitOpts = [
+                    `🌟 <strong>Hábitos de Estudio:</strong> ¡Estás demostrando unos hábitos de estudio de primer nivel! Tu constancia está creando conexiones neuronales muy fuertes en el idioma.`,
+                    `🌟 <strong>Disciplina de Acero:</strong> Tu tiempo de respuesta y tus pocos reintentos me dicen que estás estudiando con mucha concentración. ¡Sigue así!`,
+                    `🌟 <strong>Estrategia de Aprendizaje:</strong> Tus métricas de interacción son excelentes. Juegas a un ritmo ideal para que la memoria a largo plazo haga su trabajo.`
+                ];
+                reportText += `<p style="margin-bottom: 1rem;">${pickRandom(habitOpts)}</p>`;
             }
 
             const finalAdvices = [
-                `Te propongo un reto: dedica tus próximos 15 minutos exclusivamente a ejercicios de <strong>${weakestTypeData ? weakestTypeData.name : 'tu módulo actual'}</strong>. ¡Nos vemos en la cima!`,
-                `Abre el mapa interactivo y busca específicamente el próximo desafío de <strong>${weakestTypeData ? weakestTypeData.name : 'inglés'}</strong>. ¡Es el camino más rápido para subir de nivel!`,
-                `Sigue sumando experiencia. ¡Recuerda que cada racha ganada son puntos reales para el día del examen!`
+                `<strong>Mi plan táctico:</strong> Te propongo un reto: dedica tus próximos 15 minutos exclusivamente a ejercicios de <strong>${weakestTypeData ? weakestTypeData.name : 'tu módulo actual'}</strong>. ¡Nos vemos en la cima!`,
+                `<strong>Siguiente paso recomendado:</strong> Abre el mapa interactivo y busca específicamente el próximo desafío de <strong>${weakestTypeData ? weakestTypeData.name : 'inglés'}</strong>. ¡Es el camino más rápido para subir de nivel!`,
+                `<strong>Misión de hoy:</strong> Sigue sumando experiencia. ¡Recuerda que cada racha ganada son puntos reales para el día del examen! Enfócate en <strong>${weakestTypeData ? weakestTypeData.name : 'tus actividades pendientes'}</strong>.`
             ];
-            reportText += `<p style="margin-bottom: 0;"><strong>Mi plan táctico:</strong> ${finalAdvices[Math.floor(Math.random() * finalAdvices.length)]}</p>`;
+            reportText += `<p style="margin-bottom: 0;">${pickRandom(finalAdvices)}</p>`;
         }
 
         return {
