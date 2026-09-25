@@ -230,12 +230,13 @@ class MLService {
             return { ci, avgScore };
         }).sort((a, b) => a.avgScore - b.avgScore); // Ordenar de menor a mayor score
 
-        const CLUSTER_NAMES = ['En Riesgo 🚨', 'En Progreso ⚠️', 'Alto Rendimiento ✅'];
-        const CLUSTER_COLORS = ['#ef4444', '#f59e0b', '#10b981'];
-
         const clusterMap = {};
-        clusterScores.forEach(({ ci }, rank) => {
-            clusterMap[ci] = { name: CLUSTER_NAMES[rank] || `Cluster ${rank}`, color: CLUSTER_COLORS[rank] };
+        clusterScores.forEach(({ ci, avgScore }, rank) => {
+            let name, color;
+            if (avgScore >= 75) { name = 'Alto Rendimiento ✅'; color = '#10b981'; }
+            else if (avgScore >= 60) { name = 'En Progreso ⚠️'; color = '#f59e0b'; }
+            else { name = 'En Riesgo 🚨'; color = '#ef4444'; }
+            clusterMap[ci] = { name: `${name}`, color };
         });
 
         // Calcular métricas por cluster (inercia, tamaño)
