@@ -197,6 +197,34 @@ class Gamification {
         const result = await executeQuery(query, params);
         return result.recordset;
     }
+
+    /**
+     * Obtiene el ranking de jugadores basado en actividades completadas
+     * Los primeros en completar actividades aparecen primero
+     * @param {number} limit
+     */
+    static async getActivityRanking(limit = 15) {
+        const query = `
+            SELECT TOP (@Limit) 
+                U.UserID,
+                U.FirstName, 
+                U.LastName, 
+                COUNT(DISTINCT UP.ActivityID) AS CompletedActivities,
+                MAX(UP.CompletedAt) AS LastCompletedAt,
+                UG.TotalXP,
+                UG.Level
+            FROM Users U
+            INNER JOIN UserGamification UG ON U.UserID = UG.UserID
+            LEFT JOIN UserProgress UP ON U.UserID = UP.UserID AND UP.IsCompleted = 1
+            INNER JOIN Roles R ON U.RoleID = R.RoleID
+            WHERE R.RoleName = 'student' AND U.IsActive = 1
+            GROUP BY U.UserID, U.FirstName, U.LastName, UG.TotalXP, UG.Level
+            ORDER BY COUNT(DISTINCT UP.ActivityID) DESC, MAX(UP.CompletedAt) ASC
+        `;
+        const params = [{ name: 'Limit', type: sql.Int, value: limit }];
+        const result = await executeQuery(query, params);
+        return result.recordset;
+    }
 }
 
 module.exports = Gamification;

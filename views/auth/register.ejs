@@ -416,6 +416,14 @@
                         </svg>
                     </button>
                 </div>
+                <div class="pwd-requirements" id="pwdRequirements">
+                    <p style="margin:0.5rem 0 0.25rem; font-size:0.75rem; color:#9ca3af;">Tu contraseña debe tener:</p>
+                    <ul style="list-style:none; padding:0; margin:0; font-size:0.8rem;">
+                        <li id="reqLength" style="color:#ef4444; transition:color 0.3s;">✗ Mínimo 8 caracteres</li>
+                        <li id="reqUpper" style="color:#ef4444; transition:color 0.3s;">✗ Al menos una letra mayúscula (A-Z)</li>
+                        <li id="reqSpecial" style="color:#ef4444; transition:color 0.3s;">✗ Al menos un carácter especial (!@#$%^&*...)</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="form-group">
@@ -479,6 +487,42 @@
         const submitBtn = document.getElementById('submitBtn');
         let registeredEmail = '';
 
+        // ── Real-time password requirements checker ──
+        const pwdInput = document.getElementById('password');
+        const reqLength = document.getElementById('reqLength');
+        const reqUpper = document.getElementById('reqUpper');
+        const reqSpecial = document.getElementById('reqSpecial');
+
+        function checkPasswordRequirements() {
+            const val = pwdInput.value;
+            
+            if (val.length >= 8) {
+                reqLength.textContent = '✓ Mínimo 8 caracteres';
+                reqLength.style.color = '#10b981';
+            } else {
+                reqLength.textContent = '✗ Mínimo 8 caracteres';
+                reqLength.style.color = '#ef4444';
+            }
+            
+            if (/[A-Z]/.test(val)) {
+                reqUpper.textContent = '✓ Al menos una letra mayúscula (A-Z)';
+                reqUpper.style.color = '#10b981';
+            } else {
+                reqUpper.textContent = '✗ Al menos una letra mayúscula (A-Z)';
+                reqUpper.style.color = '#ef4444';
+            }
+            
+            if (/[!@#$%^&*(),.?":{}|<>]/.test(val)) {
+                reqSpecial.textContent = '✓ Al menos un carácter especial (!@#$%^&*...)';
+                reqSpecial.style.color = '#10b981';
+            } else {
+                reqSpecial.textContent = '✗ Al menos un carácter especial (!@#$%^&*...)';
+                reqSpecial.style.color = '#ef4444';
+            }
+        }
+
+        pwdInput.addEventListener('input', checkPasswordRequirements);
+
         // Form Submit
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -495,7 +539,7 @@
                 return showError('Las contraseñas no coinciden.');
             }
             if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
-                return showError('La contraseña no cumple con los requisitos de seguridad.');
+                return showError('La contraseña no cumple los requisitos. Revisa la lista debajo del campo de contraseña.');
             }
             
             errorDiv.style.display = 'none';

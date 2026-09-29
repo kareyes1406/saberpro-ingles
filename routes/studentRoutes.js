@@ -8,5 +8,6 @@ router.get('/tutorial', studentController.showTutorial);
 router.get('/week/:weekId', studentController.showWeek);
 router.get('/profile', studentController.showProfile);
 router.put('/profile/update', studentController.updateProfile);
+router.get('/ranking', studentController.getRanking);
 
 module.exports = router;

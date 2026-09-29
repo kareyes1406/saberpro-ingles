@@ -6,10 +6,20 @@
     <div class="path-line"></div>
     <div class="path-progress" id="pathProgress"></div>
     
-    <h1 style="text-align:center;margin-bottom:0.5rem;">Ruta de Aprendizaje</h1>
-    <p style="text-align:center;color:var(--text-secondary);margin-bottom:2rem;">Inglés Saber Pro — 4 Semanas</p>
+    <h1 style="text-align:center;margin-bottom:0.5rem;">Ruta de Aprendizaje <button id="mapInfoBtn" title="¿Cómo funciona?" style="background:rgba(124,58,237,0.2); border:2px solid var(--accent-purple, #7c3aed); color:#a78bfa; font-size:1.1rem; width:32px; height:32px; border-radius:50%; cursor:pointer; vertical-align:middle; margin-left:0.5rem; font-weight:800; transition:all 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.5)'" onmouseout="this.style.background='rgba(124,58,237,0.2)'">!</button></h1>
+    <p style="text-align:center;color:var(--text-secondary);margin-bottom:1rem;">Inglés Saber Pro — 4 Semanas</p>
     
-    <div class="nodes-grid">
+    <% if (typeof studentLevel !== 'undefined' && studentLevel) { %>
+      <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:2rem;">
+        <div style="background:rgba(124, 58, 237, 0.15); border:1px solid <%= levelInfo ? levelInfo.color : '#7c3aed' %>; padding:0.4rem 1.25rem; border-radius:30px; display:inline-flex; align-items:center; gap:0.5rem;">
+          <span style="font-size:1.1rem;"><%= levelInfo ? levelInfo.icon : '🎯' %></span>
+          <span style="font-weight:700; color:#fff; font-size:0.9rem;">Tu Nivel MCER: <strong style="color:<%= levelInfo ? levelInfo.color : '#a78bfa' %>;"><%= studentLevel %></strong> (<%= levelInfo ? levelInfo.name : '' %>)</span>
+        </div>
+        <div style="background:rgba(6, 182, 212, 0.12); border:1px solid #06b6d4; padding:0.4rem 1rem; border-radius:30px; font-size:0.85rem; color:#06b6d4; font-weight:600; display:inline-flex; align-items:center; gap:0.4rem;">
+          <span>🤖</span> Contenido Personalizado por IA
+        </div>
+      </div>
+    <% } %>
       <% weeks.forEach((week, index) => { %>
         <div class="week-row">
           <div class="week-node 
@@ -88,6 +98,14 @@
       <div class="stat-tooltip" style="bottom: auto; top: 100%; left: 50%;">Tu nivel actual. Sube de nivel cada 100 puntos de XP.</div>
     </div>
     
+    <!-- Ranking Section -->
+    <div class="stat-card" id="rankingCard" style="text-align:left;">
+      <h4 style="margin-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between;">🏅 Ranking de Jugadores <span style="font-size:0.7rem; color:var(--accent-cyan); font-weight:normal; cursor:pointer;" onclick="loadRanking()">🔄 Actualizar</span></h4>
+      <div id="rankingList" style="font-size:0.85rem;">
+        <div style="text-align:center; color:var(--text-muted); padding:1rem 0;"><div class="spinner" style="width:24px;height:24px;margin:0 auto;"></div><br>Cargando ranking...</div>
+      </div>
+    </div>
+    
     <!-- Badges Section -->
     <div class="stat-card" style="text-align:left;">
       <h4 style="margin-bottom:0.75rem;">🏆 Medallas</h4>
@@ -99,6 +117,25 @@
           </div>
         <% }); %>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cómo funciona el Mapa de Fortalezas -->
+<div id="mapInfoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,14,26,0.85); backdrop-filter:blur(8px); z-index:2000; justify-content:center; align-items:center;">
+  <div style="background:var(--bg-surface, #111827); padding:2rem 2.5rem; border-radius:16px; width:520px; max-width:92%; border:1px solid rgba(255,255,255,0.1); box-shadow:0 20px 40px rgba(0,0,0,0.5); position:relative;">
+    <button onclick="document.getElementById('mapInfoModal').style.display='none'" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+    <h2 style="margin-top:0; color:var(--accent-cyan, #06b6d4); display:flex; align-items:center; gap:0.5rem;">ℹ️ ¿Cómo funciona el Mapa?</h2>
+    <div style="color:var(--text-secondary, #cbd5e1); font-size:0.95rem; line-height:1.7;">
+      <p><strong>🗺️ Ruta de Aprendizaje:</strong> Tu mapa muestra 4 semanas de contenido. Cada semana tiene sub-módulos con actividades interactivas de Vocabulario, Lectura, Gramática y Pragmática.</p>
+      <p><strong>🔓 Desbloqueo Progresivo:</strong> Debes completar TODAS las actividades de una semana para desbloquear la siguiente. Las semanas bloqueadas aparecen en gris.</p>
+      <p><strong>💀 Batallas de Jefe:</strong> Al final de cada semana hay una "Boss Battle" — un examen de corte con 15 preguntas que debes aprobar con mínimo 75%.</p>
+      <p><strong>⭐ Recompensas:</strong> Cada actividad te da XP (experiencia), monedas y posibilidad de ganar medallas. Tu nivel sube cada 100 XP.</p>
+      <p><strong>🤖 IA Adaptativa:</strong> La plataforma personaliza las preguntas según tu nivel MCER detectado en el pre-test diagnóstico.</p>
+      <p><strong>🏆 Ranking:</strong> Compite con tus compañeros. Los primeros en completar actividades aparecerán en el ranking en tiempo real.</p>
+    </div>
+    <div style="text-align:center; margin-top:1.5rem;">
+      <button onclick="document.getElementById('mapInfoModal').style.display='none'" style="background:var(--color-primary, #7c3aed); color:white; border:none; padding:0.6rem 2rem; border-radius:8px; font-weight:600; cursor:pointer; font-size:1rem;">¡Entendido!</button>
     </div>
   </div>
 </div>
@@ -143,6 +180,42 @@
       text: 'Las monedas son tu recompensa. Úsalas en la tienda para comprar ayudas o pistas cuando un nivel esté muy difícil.'
     }
   ];
+
+  // Map Info Modal
+  document.getElementById('mapInfoBtn').addEventListener('click', () => {
+    document.getElementById('mapInfoModal').style.display = 'flex';
+  });
+  document.getElementById('mapInfoModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('mapInfoModal')) {
+      document.getElementById('mapInfoModal').style.display = 'none';
+    }
+  });
+
+  // Ranking System
+  async function loadRanking() {
+    try {
+      const res = await fetch('/student/ranking');
+      const data = await res.json();
+      const list = document.getElementById('rankingList');
+      if (data.ranking && data.ranking.length > 0) {
+        const medals = ['🥇', '🥈', '🥉'];
+        list.innerHTML = data.ranking.map((r, i) => `
+          <div style="display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0.5rem; border-radius:8px; margin-bottom:0.3rem; background:${i < 3 ? 'rgba(245,158,11,0.08)' : 'transparent'}; ${r.isCurrentUser ? 'border:1px solid var(--accent-cyan, #06b6d4);' : ''}">
+            <span style="font-size:${i < 3 ? '1.2rem' : '0.85rem'}; min-width:24px; text-align:center; font-weight:700; color:${i < 3 ? '#f59e0b' : 'var(--text-muted)'}">${i < 3 ? medals[i] : (i + 1)}</span>
+            <span style="flex:1; font-weight:${i < 3 ? '700' : '500'}; color:${r.isCurrentUser ? 'var(--accent-cyan)' : 'var(--text-primary)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.FirstName} ${r.LastName.charAt(0)}.${r.isCurrentUser ? ' (Tú)' : ''}</span>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${r.CompletedActivities} ✅</span>
+          </div>
+        `).join('');
+      } else {
+        list.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:0.85rem;">Aún no hay datos de ranking.</p>';
+      }
+    } catch (err) {
+      console.error('Ranking Error:', err);
+    }
+  }
+  loadRanking();
+  // Auto-refresh ranking every 30 seconds
+  setInterval(loadRanking, 30000);
 
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);

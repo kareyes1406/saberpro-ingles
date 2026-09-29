@@ -82,6 +82,11 @@ exports.showRoadmap = async (req, res) => {
         // Update streak
         await Gamification.updateStreak(userId);
         
+        // Obtener nivel adaptativo del estudiante (IA)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId) || 'B1';
+        const levelInfo = AdaptivePathService.getLevelDescription(studentLevel);
+
         res.render('student/roadmap', {
             title: 'Mi Ruta de Aprendizaje',
             cssFile: 'roadmap.css',
@@ -90,6 +95,8 @@ exports.showRoadmap = async (req, res) => {
             badges: allBadges,
             studentStats,
             allWeeksCompleted: previousCompleted,
+            studentLevel,
+            levelInfo,
             user: req.session.user
         });
         
@@ -133,7 +140,7 @@ exports.updateProfile = async (req, res) => {
 
         if (password && password.trim() !== '') {
             const bcrypt = require('bcryptjs');
-            const hash = await bcrypt.hash(password, 10);
+            const hash = await bcrypt.hash(password, 12);
             query += `, PasswordHash = @PasswordHash`;
             params.push({ name: 'PasswordHash', type: require('../config/database').sql.NVarChar, value: hash });
         }
@@ -221,6 +228,11 @@ exports.showWeek = async (req, res) => {
             TotalXP: 0, Level: 1, CurrentStreak: 0, TotalCoins: 0
         };
         
+        // Nivel adaptativo del estudiante (IA)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId) || 'B1';
+        const levelInfo = AdaptivePathService.getLevelDescription(studentLevel);
+
         res.render('student/week', {
             title: `Semana ${week.WeekNumber}: ${week.Title}`,
             cssFile: 'roadmap.css', // reuse roadmap styling layout
@@ -230,6 +242,8 @@ exports.showWeek = async (req, res) => {
             completedCount,
             totalCoins,
             studentStats,
+            studentLevel,
+            levelInfo,
             user: req.session.user
         });
     } catch (error) {
@@ -259,6 +273,11 @@ exports.showProfile = async (req, res) => {
         const AIAssistantService = require('../services/aiAssistantService');
         const aiReport = await AIAssistantService.generatePersonalizedReport(userId);
         
+        // Nivel adaptativo del estudiante (IA)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId) || 'B1';
+        const levelInfo = AdaptivePathService.getLevelDescription(studentLevel);
+
         res.render('student/profile', {
             title: 'Mi Perfil de Estudiante',
             cssFile: 'profile.css',
@@ -267,11 +286,31 @@ exports.showProfile = async (req, res) => {
             badges: earnedBadges,
             progressStats,
             aiReport,
+            studentLevel,
+            levelInfo,
             student: req.session.user,
             user: req.session.user
         });
     } catch (error) {
         console.error('Profile Error:', error);
         res.redirect('/student');
+    }
+};
+
+exports.getRanking = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const ranking = await Gamification.getActivityRanking(15);
+        
+        // Mark current user in the ranking
+        const enrichedRanking = ranking.map(r => ({
+            ...r,
+            isCurrentUser: r.UserID === userId
+        }));
+        
+        res.json({ success: true, ranking: enrichedRanking });
+    } catch (error) {
+        console.error('Ranking Error:', error);
+        res.status(500).json({ success: false, error: 'Error al obtener ranking' });
     }
 };
