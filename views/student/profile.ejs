@@ -108,7 +108,11 @@
                 </div>
             </div>
         </div>
-        <div style="width: 300px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+        <div style="width: 310px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; position: relative;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem; width: 100%;">
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px;">Mapa de Fortalezas</span>
+                <button id="strengthsInfoBtn" type="button" title="¿Cómo funciona el Mapa de Fortalezas?" style="background: rgba(124,58,237,0.25); border: 2px solid var(--accent-purple, #7c3aed); color: #a78bfa; font-size: 0.95rem; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; transition: all 0.2s; box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);" onmouseover="this.style.background='rgba(124,58,237,0.6)'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(124,58,237,0.25)'; this.style.transform='scale(1)';">!</button>
+            </div>
             <canvas id="aiRadarChart"></canvas>
         </div>
     </div>
@@ -253,8 +257,49 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Modal Mapa de Fortalezas
+    const strengthsBtn = document.getElementById('strengthsInfoBtn');
+    const strengthsModal = document.getElementById('strengthsInfoModal');
+    if (strengthsBtn && strengthsModal) {
+        strengthsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            strengthsModal.style.display = 'flex';
+        });
+        strengthsModal.addEventListener('click', (e) => {
+            if (e.target === strengthsModal) {
+                strengthsModal.style.display = 'none';
+            }
+        });
+    }
 });
 </script>
+
+<!-- Modal: Cómo funciona el Mapa de Fortalezas (Radar) -->
+<div id="strengthsInfoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,14,26,0.85); backdrop-filter:blur(8px); z-index:2000; justify-content:center; align-items:center;">
+  <div style="background:var(--bg-surface, #111827); padding:2rem 2.5rem; border-radius:16px; width:540px; max-width:92%; border:1px solid rgba(255,255,255,0.1); box-shadow:0 20px 40px rgba(0,0,0,0.5); position:relative;">
+    <button onclick="document.getElementById('strengthsInfoModal').style.display='none'" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+    <h2 style="margin-top:0; color:var(--accent-cyan, #06b6d4); display:flex; align-items:center; gap:0.5rem; font-size:1.35rem;">
+      📊 ¿Cómo funciona tu Mapa de Fortalezas?
+    </h2>
+    <div style="color:var(--text-secondary, #cbd5e1); font-size:0.95rem; line-height:1.7;">
+      <p style="margin-top:0;">Este <strong>gráfico radial</strong> representa tu nivel de dominio (del <strong>0% al 100%</strong>) en las 4 competencias evaluadas en la prueba Saber Pro de inglés:</p>
+      <ul style="margin: 0.5rem 0 1rem 1.25rem; padding: 0;">
+        <li style="margin-bottom:0.35rem;"><strong>Vocabulario:</strong> Reconocimiento de términos, sinónimos y léxico contextual.</li>
+        <li style="margin-bottom:0.35rem;"><strong>Comprensión Lectora:</strong> Identificación de ideas principales, inferencias y análisis de textos.</li>
+        <li style="margin-bottom:0.35rem;"><strong>Avisos y Diálogos:</strong> Comprensión pragmática de señales cotidianas y conversaciones cortas.</li>
+        <li style="margin-bottom:0.35rem;"><strong>Gramática:</strong> Estructuras oracionales, conjugaciones verbales y coherencia.</li>
+      </ul>
+      <p><strong>🎯 ¿Cómo interpretarlo?</strong><br>
+      Entre más se expanda la figura morada hacia un extremo, <strong>mayor es tu fortaleza y dominio</strong> en esa área. Las esquinas que se queden cerca del centro indican las habilidades donde debes enfocar tu entrenamiento.</p>
+      <p><strong>🔄 Actualización continua:</strong><br>
+      Este gráfico se recalcula automáticamente a medida que completas actividades, ejercicios y exámenes en la plataforma.</p>
+    </div>
+    <div style="text-align:center; margin-top:1.5rem;">
+      <button onclick="document.getElementById('strengthsInfoModal').style.display='none'" style="background:var(--color-primary, #7c3aed); color:white; border:none; padding:0.6rem 2rem; border-radius:8px; font-weight:600; cursor:pointer; font-size:1rem; box-shadow:0 4px 12px rgba(124, 58, 237, 0.4);">¡Entendido!</button>
+    </div>
+  </div>
+</div>
 
 <%- include('../partials/udecia-tour') %>
 <script>
