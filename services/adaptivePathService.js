@@ -120,14 +120,20 @@ class AdaptivePathService {
    * @returns {string|null} Nivel MCER
    */
   static async getStudentLevel(userId) {
-    const result = await executeQuery(
-      'SELECT EnglishLevel FROM Users WHERE UserID = @userId',
-      [{ name: 'userId', type: sql.Int, value: userId }]
-    );
-    if (result && result.recordset && result.recordset.length > 0) {
-      return result.recordset[0].EnglishLevel;
+    try {
+      const result = await executeQuery(
+        'SELECT EnglishLevel FROM Users WHERE UserID = @userId',
+        [{ name: 'userId', type: sql.Int, value: userId }]
+      );
+      if (result && result.recordset && result.recordset.length > 0) {
+        return result.recordset[0].EnglishLevel;
+      }
+      return null;
+    } catch (e) {
+      // EnglishLevel column may not exist yet in the database
+      console.warn('AdaptivePathService.getStudentLevel: Column may not exist yet -', e.message);
+      return null;
     }
-    return null;
   }
 
   /**
@@ -137,21 +143,25 @@ class AdaptivePathService {
    * @returns {Object} Configuración
    */
   static async getAllowedQuestionTypes(userId, weekNumber) {
-    const result = await executeQuery(
-      'SELECT PrimaryTypes, SecondaryTypes, SecondaryRatio FROM AdaptiveLearningPaths WHERE UserID = @userId AND WeekNumber = @week',
-      [
-        { name: 'userId', type: sql.Int, value: userId },
-        { name: 'week', type: sql.Int, value: weekNumber }
-      ]
-    );
+    try {
+      const result = await executeQuery(
+        'SELECT PrimaryTypes, SecondaryTypes, SecondaryRatio FROM AdaptiveLearningPaths WHERE UserID = @userId AND WeekNumber = @week',
+        [
+          { name: 'userId', type: sql.Int, value: userId },
+          { name: 'week', type: sql.Int, value: weekNumber }
+        ]
+      );
 
-    if (result && result.recordset && result.recordset.length > 0) {
-      const row = result.recordset[0];
-      return {
-        primary: JSON.parse(row.PrimaryTypes),
-        secondary: JSON.parse(row.SecondaryTypes),
-        ratio: row.SecondaryRatio
-      };
+      if (result && result.recordset && result.recordset.length > 0) {
+        const row = result.recordset[0];
+        return {
+          primary: JSON.parse(row.PrimaryTypes),
+          secondary: JSON.parse(row.SecondaryTypes),
+          ratio: row.SecondaryRatio
+        };
+      }
+    } catch (e) {
+      console.warn('AdaptivePathService.getAllowedQuestionTypes: Table may not exist yet -', e.message);
     }
 
     // Por defecto todas si no hay ruta
