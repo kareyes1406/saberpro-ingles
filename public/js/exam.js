@@ -81,6 +81,23 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.success) {
                 finalScore.textContent = `${data.totalScore}%`;
+                
+                const levelDisplay = document.getElementById('levelDisplay');
+                if (levelDisplay && data.level) {
+                    const info = data.levelInfo || {};
+                    levelDisplay.innerHTML = `
+                        <div style="margin: 1.25rem 0; padding: 1rem; background: rgba(124, 58, 237, 0.12); border: 2px solid ${info.color || '#7c3aed'}; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">${info.icon || '🎯'}</div>
+                            <h3 style="color: #fff; margin: 0; font-size: 1.2rem;">Tu Nivel MCER: <span style="color: ${info.color || '#a78bfa'}; font-weight: 800;">${data.level}</span></h3>
+                            <div style="font-size: 0.95rem; font-weight: 600; color: ${info.color || '#a78bfa'}; margin-top: 0.2rem;">${info.name || ''}</div>
+                            <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0.5rem 0 0 0; line-height: 1.4;">${info.description || ''}</p>
+                            <div style="margin-top: 0.75rem; padding: 0.4rem 0.75rem; background: rgba(6, 182, 212, 0.15); border-radius: 8px; font-size: 0.8rem; color: #38bdf8; font-weight: 600;">
+                                🤖 Ruta de 4 semanas adaptada a tus competencias
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 resultModal.classList.add('active');
             } else {
                 alert(data.error || 'Hubo un error al enviar el examen.');

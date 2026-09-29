@@ -94,9 +94,22 @@ async function testConnection() {
     }
 }
 
+async function closePool() {
+    if (pool) {
+        try {
+            await pool.close();
+            pool = null;
+        } catch (err) {
+            console.error('Error closing pool:', err);
+        }
+    }
+}
+
 module.exports = {
     getPool,
     executeQuery,
     testConnection,
+    closePool,
     sql
 };
+

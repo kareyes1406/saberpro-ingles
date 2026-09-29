@@ -105,13 +105,14 @@
 
 <!-- Modal de Resultados -->
 <div class="modal-overlay" id="resultModal">
-    <div class="modal-content text-center">
+    <div class="modal-content text-center" style="max-width: 480px;">
         <h2>Prueba Finalizada</h2>
         <div class="score-display">
             <span id="finalScore" class="score-number">0%</span>
         </div>
-        <p>Tus resultados se usarán para personalizar tu plan de estudio y calcular tu desempeño proyectado.</p>
-        <button class="btn-primary" onclick="window.location.href='/student/tutorial'">Continuar</button>
+        <div id="levelDisplay"></div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Tu plan de estudio y contenidos han sido adaptados inteligentemente a tu nivel.</p>
+        <button class="btn-primary" onclick="window.location.href='/student/roadmap'" style="margin-top: 1rem; width: 100%;">Comenzar Mi Ruta Personalizada →</button>
     </div>
 </div>
 

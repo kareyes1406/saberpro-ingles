@@ -148,8 +148,10 @@ exports.submitExam = async (req, res) => {
         // Note: we need the original QuestionTypes to classify the scores.
         // We can infer them by keeping them in session or re-querying.
         // For simplicity, re-query the question types from DB for the answered questions.
-        const qIds = Object.keys(correctAnswers).join(',');
-        const qTypesResult = await executeQuery(`SELECT QuestionID, QuestionType FROM Questions WHERE QuestionID IN (${qIds})`);
+        const questionIds = Object.keys(correctAnswers);
+        const paramNames = questionIds.map((_, i) => `@QID${i}`).join(',');
+        const qParams = questionIds.map((id, i) => ({ name: `QID${i}`, type: sql.Int, value: parseInt(id) }));
+        const qTypesResult = await executeQuery(`SELECT QuestionID, QuestionType FROM Questions WHERE QuestionID IN (${paramNames})`, qParams);
         
         const qTypeMap = {};
         qTypesResult.recordset.forEach(row => {
@@ -202,7 +204,30 @@ exports.submitExam = async (req, res) => {
         delete req.session.examAnswers;
         delete req.session.examType;
 
-        res.json({ success: true, totalScore, vocabScore, pragScore, readingScore, grammarScore });
+        // IA Adaptativa: Clasificación en niveles MCER y generación de ruta
+        let classifiedLevel = null;
+        let levelInfo = null;
+        if (examType === 'PRE') {
+            try {
+                const AdaptivePathService = require('../services/adaptivePathService');
+                classifiedLevel = AdaptivePathService.classifyLevel(totalScore);
+                levelInfo = AdaptivePathService.getLevelDescription(classifiedLevel);
+                await AdaptivePathService.generateAdaptivePath(userId, totalScore);
+            } catch (aiErr) {
+                console.error('Error en servicio de ruta adaptativa:', aiErr.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            totalScore,
+            vocabScore,
+            pragScore,
+            readingScore,
+            grammarScore,
+            level: classifiedLevel,
+            levelInfo
+        });
 
     } catch (error) {
         console.error('Submit Exam Error:', error);

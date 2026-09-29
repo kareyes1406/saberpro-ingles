@@ -17,11 +17,11 @@ router.get('/login', authController.showLogin);
 router.post('/login', loginLimiter, authController.processLogin);
 router.get('/register', authController.showRegister);
 router.post('/register', authController.processRegister);
-router.post('/verify-pin', authController.verifyPin);
+router.post('/verify-pin', loginLimiter, authController.verifyPin);
 
 // Recuperación de Contraseña
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/verify-reset-pin', authController.verifyResetPin);
+router.post('/forgot-password', loginLimiter, authController.forgotPassword);
+router.post('/verify-reset-pin', loginLimiter, authController.verifyResetPin);
 router.post('/reset-password', authController.resetPassword);
 
 router.post('/logout', authController.logout);

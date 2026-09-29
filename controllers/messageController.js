@@ -74,6 +74,14 @@ class MessageController {
     async markAsRead(req, res) {
         try {
             const { id } = req.params;
+            const userId = req.session.userId || req.session.user?.UserID;
+            
+            // Verificar que el mensaje pertenece al usuario actual
+            const message = await Message.getThread(parseInt(id, 10));
+            if (!message || (message.ReceiverID !== userId && req.session.role !== 'admin')) {
+                return res.status(403).json({ error: 'No autorizado' });
+            }
+            
             await Message.markAsRead(parseInt(id, 10));
             res.json({ success: true });
         } catch (error) {

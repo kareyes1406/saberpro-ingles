@@ -59,25 +59,32 @@ exports.processLogin = async (req, res) => {
         );
         const roleName = roleResult.recordset[0]?.RoleName || 'student';
         
-        // Set session
-        req.session.userId = user.UserID;
-        req.session.user = {
-            UserID: user.UserID,
-            FirstName: user.FirstName,
-            LastName: user.LastName,
-            Email: user.Email,
-            Role: roleName
-        };
-        req.session.role = roleName;
-        
-        // Redirect based on role
-        if (roleName === 'admin') {
-            return res.redirect('/admin/dashboard');
-        }
-        if (roleName === 'professor') {
-            return res.redirect('/professor/dashboard');
-        }
-        return res.redirect('/student');
+        // Regenerar sesión para prevenir Session Fixation
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Session regeneration error:', err);
+                req.flash('error', 'Error en el servidor. Intenta de nuevo.');
+                return res.redirect('/auth/login');
+            }
+            req.session.userId = user.UserID;
+            req.session.user = {
+                UserID: user.UserID,
+                FirstName: user.FirstName,
+                LastName: user.LastName,
+                Email: user.Email,
+                Role: roleName
+            };
+            req.session.role = roleName;
+            
+            // Redirect based on role
+            if (roleName === 'admin') {
+                return res.redirect('/admin/dashboard');
+            }
+            if (roleName === 'professor') {
+                return res.redirect('/professor/dashboard');
+            }
+            return res.redirect('/student');
+        });
         
     } catch (error) {
         console.error('Login Error:', error);
@@ -136,7 +143,7 @@ exports.processRegister = async (req, res) => {
         });
         
         // Generar PIN aleatorio de 6 dígitos para el nuevo usuario
-        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        const pin = require('crypto').randomInt(100000, 1000000).toString();
         await User.saveVerificationPin(newUser.UserID, pin);
         
         // Enviar correo electrónico al usuario que se está registrando
@@ -196,6 +203,7 @@ exports.verifyPin = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
+    res.clearCookie('sessionId');
     req.session.destroy((err) => {
         if (err) console.error('Logout Error:', err);
         res.redirect('/auth/login');
@@ -217,7 +225,7 @@ exports.forgotPassword = async (req, res) => {
         }
 
         // Reutilizamos el sistema de pines existente
-        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        const pin = require('crypto').randomInt(100000, 1000000).toString();
         await User.saveVerificationPin(user.UserID, pin); // Expira en 10 mins (lógica ya en modelo)
 
         // Enviar correo (asumimos que emailService.sendVerificationPin se puede reusar, o mandamos texto diferente)

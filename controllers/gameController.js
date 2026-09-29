@@ -39,25 +39,42 @@ async function isAlreadyCompleted(userId, activityId) {
 }
 
 /**
- * Determina el tipo de pregunta a usar según la semana y el tipo de actividad
+ * Determina el tipo de pregunta a usar según la semana, el tipo de actividad y el nivel del estudiante (IA Adaptativa)
  */
-function getQuestionTypeForActivity(weekNumber, activityType) {
-    // Semanas 1-3: Nivel A1-A2 (Parts 1, 2, 3)
-    // Semanas 5-7: Nivel A2-B1 (Parts 4, 5)
-    // Semanas 9-11: Nivel B1-B2 (Parts 6, 7)
+function getQuestionTypeForActivity(weekNumber, activityType, studentLevel = null) {
+    if (studentLevel) {
+        if (studentLevel === 'A1') {
+            if (activityType === 'Vocabulary') return 'part2_matching';
+            if (activityType === 'Pragmatics') return weekNumber <= 2 ? 'part1_notice' : 'part3_dialogue';
+            if (activityType === 'Reading') return 'part5_reading';
+            if (activityType === 'Grammar') return 'part4_cloze';
+        } else if (studentLevel === 'A2') {
+            if (activityType === 'Vocabulary') return 'part2_matching';
+            if (activityType === 'Pragmatics') return 'part3_dialogue';
+            if (activityType === 'Reading') return 'part5_reading';
+            if (activityType === 'Grammar') return weekNumber <= 2 ? 'part4_cloze' : 'part7_cloze_advanced';
+        } else if (studentLevel === 'B1') {
+            if (activityType === 'Vocabulary') return 'part2_matching';
+            if (activityType === 'Pragmatics') return 'part3_dialogue';
+            if (activityType === 'Reading') return weekNumber <= 2 ? 'part5_reading' : 'part6_critical';
+            if (activityType === 'Grammar') return weekNumber <= 1 ? 'part4_cloze' : 'part7_cloze_advanced';
+        } else if (studentLevel === 'B2' || studentLevel === 'C1') {
+            if (activityType === 'Vocabulary') return 'part2_matching';
+            if (activityType === 'Pragmatics') return 'part3_dialogue';
+            if (activityType === 'Reading') return 'part6_critical';
+            if (activityType === 'Grammar') return 'part7_cloze_advanced';
+        }
+    }
     
+    // Distribución por defecto para 4 semanas
     if (activityType === 'Vocabulary') {
         return 'part2_matching';
     } else if (activityType === 'Pragmatics') {
-        if (weekNumber <= 3) return 'part1_notice';
-        if (weekNumber <= 7) return 'part3_dialogue';
-        return 'part1_notice'; // fallback
+        return weekNumber <= 2 ? 'part1_notice' : 'part3_dialogue';
     } else if (activityType === 'Reading') {
-        if (weekNumber <= 7) return 'part5_reading';
-        return 'part6_critical';
+        return weekNumber <= 2 ? 'part5_reading' : 'part6_critical';
     } else if (activityType === 'Grammar') {
-        if (weekNumber <= 7) return 'part4_cloze';
-        return 'part7_cloze_advanced';
+        return weekNumber <= 2 ? 'part4_cloze' : 'part7_cloze_advanced';
     }
     return 'part1_notice';
 }
@@ -164,8 +181,10 @@ exports.showReading = async (req, res) => {
         );
         const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
         
-        // Seleccionar tipo de lectura según la semana
-        const questionType = weekNumber <= 7 ? 'part5_reading' : 'part6_critical';
+        // Seleccionar tipo de lectura según la semana y el nivel del estudiante (IA Adaptativa)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId);
+        const questionType = getQuestionTypeForActivity(weekNumber, 'Reading', studentLevel);
         
         // Obtener todas las preguntas de lectura de ese tipo
         const allQuestions = await Module.getReadingQuestions(questionType, userId);
@@ -304,8 +323,10 @@ exports.showPragmatics = async (req, res) => {
         );
         const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
         
-        // Semanas 1-3: Avisos (Part 1), Semanas 5-7: Diálogos (Part 3)
-        const questionType = weekNumber <= 4 ? 'part1_notice' : 'part3_dialogue';
+        // Seleccionar tipo según la semana y el nivel del estudiante (IA Adaptativa)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId);
+        const questionType = getQuestionTypeForActivity(weekNumber, 'Pragmatics', studentLevel);
         
         // Obtener 5 preguntas aleatorias del pool
         const questions = await Module.getRandomQuestionsByType(questionType, 5, userId, activityId);
@@ -471,8 +492,10 @@ exports.showGrammar = async (req, res) => {
         );
         const weekNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
         
-        // Semanas 1-7: Cloze básico (Part 4), Semanas 8+: Cloze avanzado (Part 7)
-        const questionType = weekNumber <= 7 ? 'part4_cloze' : 'part7_cloze_advanced';
+        // Seleccionar tipo de cloze según la semana y el nivel del estudiante (IA Adaptativa)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId);
+        const questionType = getQuestionTypeForActivity(weekNumber, 'Grammar', studentLevel);
         
         // Obtener un texto completo con sus preguntas
         const textData = await Module.getRandomTextWithQuestions(questionType);
@@ -592,22 +615,32 @@ exports.showBossBattle = async (req, res) => {
             'SELECT WeekNumber FROM ModuleWeeks MW INNER JOIN Activities A ON MW.WeekID = A.WeekID WHERE A.ActivityID = @ActivityID',
             [{ name: 'ActivityID', type: sql.Int, value: activityId }]
         );
-        const cutNumber = weekNumber; // Ahora cada semana es un corte
+        const cutNumber = weekResult.recordset.length > 0 ? weekResult.recordset[0].WeekNumber : 1;
         
-        // Seleccionar preguntas aleatorias según la semana (corte)
+        // Seleccionar preguntas aleatorias según la semana (corte) y el nivel (IA Adaptativa)
+        const AdaptivePathService = require('../services/adaptivePathService');
+        const studentLevel = await AdaptivePathService.getStudentLevel(userId);
+        
         let questionTypes = [];
-        if (cutNumber === 1) {
-            // Semana 1: Parts 1, 2, 3 (A1-A2)
-            questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue'];
-        } else if (cutNumber === 2) {
-            // Semana 2: Parts 4, 5 (A2-B1)
-            questionTypes = ['part4_cloze', 'part5_reading'];
-        } else if (cutNumber === 3) {
-            // Semana 3: Parts 6, 7 (B1-B2)
-            questionTypes = ['part6_critical', 'part7_cloze_advanced'];
-        } else {
-            // Semana 4: Evaluación integral (Repaso de todo)
-            questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue', 'part4_cloze', 'part5_reading', 'part6_critical', 'part7_cloze_advanced'];
+        if (studentLevel) {
+            questionTypes = AdaptivePathService.getAllQuestionTypesFlat(studentLevel, cutNumber);
+        }
+        
+        // Fallback si no tiene ruta adaptativa configurada
+        if (!questionTypes || questionTypes.length === 0) {
+            if (cutNumber === 1) {
+                // Semana 1: Parts 1, 2, 3 (A1-A2)
+                questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue'];
+            } else if (cutNumber === 2) {
+                // Semana 2: Parts 4, 5 (A2-B1)
+                questionTypes = ['part4_cloze', 'part5_reading'];
+            } else if (cutNumber === 3) {
+                // Semana 3: Parts 6, 7 (B1-B2)
+                questionTypes = ['part6_critical', 'part7_cloze_advanced'];
+            } else {
+                // Semana 4: Evaluación integral (Repaso de todo)
+                questionTypes = ['part1_notice', 'part2_matching', 'part3_dialogue', 'part4_cloze', 'part5_reading', 'part6_critical', 'part7_cloze_advanced'];
+            }
         }
         
         const questions = await Module.getRandomQuestionsFromPools(questionTypes, 15);
@@ -753,45 +786,7 @@ exports.getModuleProgress = async (req, res) => {
     }
 };
 
-// DEV CHEATS: Skip activity or skip entire week
-exports.cheatSkipActivity = async (req, res) => {
-    try {
-        const userId = req.session.userId;
-        const activityId = parseInt(req.body.activityId);
-        
-        await Progress.recordCompletion({
-            userId, activityId,
-            isCompleted: true, score: 100,
-            timeSpentSeconds: 5, attemptNumber: 1
-        });
-        
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Cheat Skip Activity Error:', error);
-        res.status(500).json({ error: 'Error al saltar actividad' });
-    }
-};
 
-exports.cheatSkipWeek = async (req, res) => {
-    try {
-        const userId = req.session.userId;
-        const weekId = parseInt(req.body.weekId);
-        
-        const activities = await Module.getWeekActivities(weekId);
-        for (const act of activities) {
-            await Progress.recordCompletion({
-                userId, activityId: act.ActivityID,
-                isCompleted: true, score: 100,
-                timeSpentSeconds: 5, attemptNumber: 1
-            });
-        }
-        
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Cheat Skip Week Error:', error);
-        res.status(500).json({ error: 'Error al saltar semana' });
-    }
-};
 
 /**
  * Pista del Sabio: Consume 1 token de pista del inventario y descarta una opción incorrecta
