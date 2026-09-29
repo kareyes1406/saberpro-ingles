@@ -7,7 +7,7 @@
     <div class="path-progress" id="pathProgress"></div>
     
     <h1 style="text-align:center;margin-bottom:0.5rem;">Ruta de Aprendizaje <button id="mapInfoBtn" title="¿Cómo funciona?" style="background:rgba(124,58,237,0.2); border:2px solid var(--accent-purple, #7c3aed); color:#a78bfa; font-size:1.1rem; width:32px; height:32px; border-radius:50%; cursor:pointer; vertical-align:middle; margin-left:0.5rem; font-weight:800; transition:all 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.5)'" onmouseout="this.style.background='rgba(124,58,237,0.2)'">!</button></h1>
-    <p style="text-align:center;color:var(--text-secondary);margin-bottom:1rem;">Inglés Saber Pro — 4 Semanas</p>
+    <p style="text-align:center;color:var(--text-secondary);margin-bottom:2rem;">Inglés Saber Pro — 4 Semanas</p>
     
     <% if (typeof studentLevel !== 'undefined' && studentLevel) { %>
       <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:2rem;">
@@ -20,6 +20,7 @@
         </div>
       </div>
     <% } %>
+    <div class="nodes-grid">
       <% weeks.forEach((week, index) => { %>
         <div class="week-row">
           <div class="week-node 
