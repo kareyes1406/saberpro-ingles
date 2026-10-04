@@ -33,19 +33,25 @@
   </div>
 
   <!-- Pre-Test Scores -->
-  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
+    <!-- Pre-Test Card -->
     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1.5rem;">
-      <h3 style="margin:0 0 1rem; color:var(--accent-cyan);">📝 Resultado Pre-Test</h3>
+      <h3 style="margin:0 0 1rem; color:var(--accent-cyan); display:flex; align-items:center; justify-content:space-between;">
+        <span>📝 1° Examen (Pre-Test)</span>
+        <% if (preTest) { %>
+          <span style="font-size:0.8rem; background:rgba(6,182,212,0.15); color:var(--accent-cyan); padding:2px 8px; border-radius:12px;">Completado</span>
+        <% } %>
+      </h3>
       <% if (preTest) { %>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-          <% const competencies = [
+          <% const preCompetencies = [
             { label: 'Total', value: Math.round(preTest.TotalScore || 0), color: '#7c3aed' },
             { label: 'Vocabulario', value: Math.round(preTest.VocabularyScore || 0), color: '#06b6d4' },
             { label: 'Lectura', value: Math.round(preTest.ReadingScore || 0), color: '#10b981' },
             { label: 'Avisos y Diálogos', value: Math.round(preTest.PragmaticsScore || 0), color: '#f59e0b' },
             { label: 'Gramática', value: Math.round(preTest.GrammarScore || 0), color: '#ec4899' }
           ]; %>
-          <% competencies.forEach(c => { %>
+          <% preCompetencies.forEach(c => { %>
             <div style="background:rgba(255,255,255,0.02); border-radius:8px; padding:0.75rem; border-left:3px solid <%= c.color %>;">
               <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;"><%= c.label %></div>
               <div style="font-size:1.4rem; font-weight:700; color:<%= c.color %>;"><%= c.value %>%</div>
@@ -57,6 +63,42 @@
         </div>
       <% } else { %>
         <p style="color:var(--text-secondary);">⚠️ El estudiante aún no ha completado el Pre-Test.</p>
+      <% } %>
+    </div>
+
+    <!-- Post-Test Card -->
+    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1.5rem;">
+      <h3 style="margin:0 0 1rem; color:#a78bfa; display:flex; align-items:center; justify-content:space-between;">
+        <span>🎓 Último Examen (Post-Test)</span>
+        <% if (postTest) { %>
+          <span style="font-size:0.8rem; background:rgba(124,58,237,0.2); color:#a78bfa; padding:2px 8px; border-radius:12px;">Completado</span>
+        <% } %>
+      </h3>
+      <% if (postTest) { %>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <% const postCompetencies = [
+            { label: 'Total', value: Math.round(postTest.TotalScore || 0), color: '#7c3aed' },
+            { label: 'Vocabulario', value: Math.round(postTest.VocabularyScore || 0), color: '#06b6d4' },
+            { label: 'Lectura', value: Math.round(postTest.ReadingScore || 0), color: '#10b981' },
+            { label: 'Avisos y Diálogos', value: Math.round(postTest.PragmaticsScore || 0), color: '#f59e0b' },
+            { label: 'Gramática', value: Math.round(postTest.GrammarScore || 0), color: '#ec4899' }
+          ]; %>
+          <% postCompetencies.forEach(c => { %>
+            <div style="background:rgba(255,255,255,0.02); border-radius:8px; padding:0.75rem; border-left:3px solid <%= c.color %>;">
+              <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;"><%= c.label %></div>
+              <div style="font-size:1.4rem; font-weight:700; color:<%= c.color %>;"><%= c.value %>%</div>
+              <div style="background:rgba(255,255,255,0.05); border-radius:4px; height:4px; margin-top:0.5rem;">
+                <div style="background:<%= c.color %>; border-radius:4px; height:4px; width:<%= c.value %>%;"></div>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:180px; text-align:center; color:var(--text-secondary);">
+          <div style="font-size:2rem; margin-bottom:0.5rem;">🔒</div>
+          <p style="margin:0; font-size:0.9rem;">El estudiante aún no ha presentado el Post-Test final.</p>
+          <small style="color:var(--text-muted); margin-top:0.25rem;">Se desbloquea al finalizar las 4 semanas.</small>
+        </div>
       <% } %>
     </div>
 

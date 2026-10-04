@@ -21,6 +21,11 @@
                             </div>
                         </div>
                         <div>
+                            <% if (msg.Subject && (msg.Subject.includes('SOPORTE DOCENTE') || msg.Subject.includes('ESCALADO'))) { %>
+                                <span style="background: rgba(239,68,68,0.3); color: #fca5a5; border: 1px solid #ef4444; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; margin-right: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    🚨 Alta Prioridad (Docente)
+                                </span>
+                            <% } %>
                             <% if (!msg.IsRead) { %>
                                 <span style="background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
                                     Nuevo

@@ -1,4 +1,5 @@
 const Message = require('../models/Message');
+const ChatbotService = require('../services/chatbotService');
 
 class MessageController {
     async sendMessage(req, res) {
@@ -15,8 +16,60 @@ class MessageController {
             const targetReceiver = receiverId ? parseInt(receiverId, 10) : null;
             const parent = parentId ? parseInt(parentId, 10) : null;
             
-            await Message.sendMessage(senderId, targetReceiver, subject || 'Mensaje de estudiante', messageBody.trim(), parent);
-            res.json({ success: true, message: 'Mensaje enviado correctamente.' });
+            // Determinar si quien escribe es estudiante para activar el asistente UDECIA
+            const isStudent = req.session.role === 'student' || !req.session.role;
+            
+            let botResult = null;
+            if (isStudent && !targetReceiver) {
+                botResult = ChatbotService.processMessage(messageBody, {
+                    FirstName: req.session.user?.FirstName || '',
+                    LastName: req.session.user?.LastName || '',
+                    UserID: senderId
+                });
+            }
+
+            // Asunto dinámico según si fue escalado a docentes
+            let finalSubject = subject || 'Mensaje de estudiante';
+            if (botResult && botResult.escalated) {
+                finalSubject = '🚨 [SOPORTE DOCENTE REQUERIDO] ' + (req.session.user?.FirstName || 'Estudiante');
+            } else if (botResult) {
+                finalSubject = '💬 [CONSULTA ASISTENTE] ' + (req.session.user?.FirstName || 'Estudiante');
+            }
+
+            // Registrar mensaje del estudiante
+            const insertedMsgId = await Message.sendMessage(
+                senderId, 
+                targetReceiver, 
+                finalSubject, 
+                messageBody.trim(), 
+                parent
+            );
+
+            // Si el chatbot generó respuesta, registrarla en la base de datos (con emisor Admin UserID 1)
+            let botReplyText = null;
+            let isEscalated = false;
+            if (botResult && botResult.reply) {
+                botReplyText = botResult.reply;
+                isEscalated = botResult.escalated;
+                try {
+                    await Message.sendMessage(
+                        1, 
+                        senderId, 
+                        '🤖 Respuesta UDECIA', 
+                        botReplyText, 
+                        typeof insertedMsgId === 'number' ? insertedMsgId : null
+                    );
+                } catch (botDbErr) {
+                    console.error('Advertencia guardando respuesta de bot en BD:', botDbErr);
+                }
+            }
+
+            res.json({ 
+                success: true, 
+                message: 'Mensaje enviado correctamente.',
+                botReply: botReplyText,
+                escalated: isEscalated
+            });
         } catch (error) {
             console.error('Error in sendMessage:', error);
             res.status(500).json({ success: false, message: 'Error al enviar el mensaje.' });
@@ -31,7 +84,7 @@ class MessageController {
             }
             const messages = await Message.getUserMessages(userId);
             const unreadCount = await Message.getUnreadCount(userId);
-            res.json({ success: true, messages, unreadCount });
+            res.json({ success: true, messages, unreadCount, currentUserId: userId });
         } catch (error) {
             console.error('Error in getStudentMessages:', error);
             res.status(500).json({ success: false, message: 'Error obteniendo los mensajes.' });

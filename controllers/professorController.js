@@ -59,6 +59,8 @@ class ProfessorController {
                         WHERE UP3.UserID = U.UserID AND UP3.IsCompleted = 1 
                         ORDER BY UP3.CompletedAt DESC) as CurrentActivity,
                        (SELECT TOP 1 TotalScore FROM UserExams UE WHERE UE.UserID = U.UserID AND UE.ExamType = 'PRE' ORDER BY CompletedAt DESC) as PreTestScore,
+                       (SELECT TOP 1 TotalScore FROM UserExams UE_POST WHERE UE_POST.UserID = U.UserID AND UE_POST.ExamType = 'POST' ORDER BY CompletedAt DESC) as PostTestScore,
+                       U.EnglishLevel,
                        ISNULL(
                            (SELECT AVG(UP4.Score) FROM UserProgress UP4 WHERE UP4.UserID = U.UserID AND UP4.IsCompleted = 1), 
                            (SELECT TOP 1 TotalScore FROM UserExams UE2 WHERE UE2.UserID = U.UserID AND UE2.ExamType = 'PRE' ORDER BY CompletedAt DESC)
@@ -202,6 +204,65 @@ class ProfessorController {
                 };
             }).filter(Boolean);
             
+            // NEW: Scatter plot data (Pre-Test vs Post-Test student level distribution)
+            const scatterExamsQuery = await executeQuery(`
+                SELECT 
+                    U.UserID,
+                    U.FirstName + ' ' + U.LastName as FullName,
+                    UE_PRE.TotalScore as PreScore,
+                    UE_POST.TotalScore as PostScore
+                FROM Users U
+                INNER JOIN Roles R ON U.RoleID = R.RoleID
+                LEFT JOIN (
+                    SELECT UserID, TotalScore, ROW_NUMBER() OVER(PARTITION BY UserID ORDER BY CompletedAt DESC) as rn 
+                    FROM UserExams WHERE ExamType = 'PRE'
+                ) UE_PRE ON U.UserID = UE_PRE.UserID AND UE_PRE.rn = 1
+                LEFT JOIN (
+                    SELECT UserID, TotalScore, ROW_NUMBER() OVER(PARTITION BY UserID ORDER BY CompletedAt DESC) as rn 
+                    FROM UserExams WHERE ExamType = 'POST'
+                ) UE_POST ON U.UserID = UE_POST.UserID AND UE_POST.rn = 1
+                WHERE R.RoleName = 'student' AND U.IsActive = 1
+                  AND (UE_PRE.TotalScore IS NOT NULL OR UE_POST.TotalScore IS NOT NULL)
+            `);
+
+            function classifyMCER(score) {
+                if (score <= 25) return { level: 'A1', val: 1 };
+                if (score <= 45) return { level: 'A2', val: 2 };
+                if (score <= 65) return { level: 'B1', val: 3 };
+                if (score <= 85) return { level: 'B2', val: 4 };
+                return { level: 'C1', val: 5 };
+            }
+
+            const preTestScatter = [];
+            const postTestScatter = [];
+
+            scatterExamsQuery.recordset.forEach(s => {
+                if (s.PreScore !== null && s.PreScore !== undefined) {
+                    const score = Math.round(parseFloat(s.PreScore));
+                    const lvl = classifyMCER(score);
+                    const jitter = ((s.UserID % 7) - 3) * 0.04;
+                    preTestScatter.push({
+                        x: score,
+                        y: lvl.val + jitter,
+                        name: s.FullName,
+                        level: lvl.level,
+                        score: score
+                    });
+                }
+                if (s.PostScore !== null && s.PostScore !== undefined) {
+                    const score = Math.round(parseFloat(s.PostScore));
+                    const lvl = classifyMCER(score);
+                    const jitter = ((s.UserID % 7) - 3) * 0.04;
+                    postTestScatter.push({
+                        x: score,
+                        y: lvl.val + jitter,
+                        name: s.FullName,
+                        level: lvl.level,
+                        score: score
+                    });
+                }
+            });
+
             res.json({
                 weeklyCompletion: weeklyCompletion.recordset,
                 weeklyTime: weeklyTime.recordset,
@@ -212,7 +273,11 @@ class ProfessorController {
                 xpDistribution: xpDistribution.recordset,
                 topStudents: topStudents.recordset,
                 clusterSummary,
-                clusteredStudents
+                clusteredStudents,
+                scatterData: {
+                    preTest: preTestScatter,
+                    postTest: postTestScatter
+                }
             });
         } catch (error) {
             console.error('Professor KPI Data Error:', error);
@@ -243,6 +308,13 @@ class ProfessorController {
                 [{ name: 'UserID', type: sql.Int, value: targetUserId }]
             );
             const preTest = preTestResult.recordset[0] || null;
+
+            // Post-test scores
+            const postTestResult = await executeQuery(
+                `SELECT * FROM UserExams WHERE UserID = @UserID AND ExamType = 'POST' ORDER BY CompletedAt DESC`,
+                [{ name: 'UserID', type: sql.Int, value: targetUserId }]
+            );
+            const postTest = postTestResult.recordset[0] || null;
 
             // Progress per week
             const weeklyProgress = await executeQuery(`
@@ -359,6 +431,7 @@ class ProfessorController {
                 cssFile: 'admin.css',
                 student,
                 preTest,
+                postTest,
                 weeklyProgress: weeklyProgress.recordset,
                 competencyProgress: competencyProgress.recordset,
                 compAverages,

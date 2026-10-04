@@ -74,6 +74,9 @@
               <% if (!msg.IsRead) { %>
                 <span style="background:rgba(239,68,68,0.2); color:#ef4444; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:6px;">NUEVO</span>
               <% } %>
+              <% if (msg.Subject && (msg.Subject.includes('SOPORTE DOCENTE') || msg.Subject.includes('ESCALADO'))) { %>
+                <span style="background:rgba(239,68,68,0.3); color:#fca5a5; border:1px solid #ef4444; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:6px;">🚨 DOCENTE</span>
+              <% } %>
             </div>
             <p style="margin:0.25rem 0 0; color:#cbd5e1; font-size:0.88rem; line-height:1.4;">
               <%= msg.MessageText.length > 120 ? msg.MessageText.substring(0, 120) + '...' : msg.MessageText %>
@@ -138,6 +141,17 @@
     <div class="chart-container"><canvas id="clusterChart"></canvas></div>
     <div id="clusterLegend" style="margin-top:0.75rem;"></div>
   </div>
+  <div class="chart-card" style="grid-column: 1 / -1;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:0.5rem; gap:0.5rem;">
+      <h3 style="margin-bottom:0; border:none; padding:0;">🎯 Diagrama de Dispersión — Niveles MCER (Primera vs Última Prueba)</h3>
+      <div style="display:flex; gap:1rem; font-size:0.85rem; align-items:center; flex-wrap:wrap;">
+        <span style="display:inline-flex; align-items:center; gap:0.35rem; color:#06b6d4; font-weight:600;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#06b6d4;"></span> Primera Prueba (Pre-Test)</span>
+        <span style="display:inline-flex; align-items:center; gap:0.35rem; color:#a855f7; font-weight:600;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a855f7;"></span> Última Prueba (Post-Test)</span>
+      </div>
+    </div>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0; margin-bottom:1rem;">Visualización de dispersión y agrupación de estudiantes según puntaje obtenido (eje horizontal) y nivel MCER alcanzado (eje vertical: A1 a C1). Permite contrastar de forma directa el diagnóstico inicial contra el examen final.</p>
+    <div class="chart-container" style="height:350px;"><canvas id="scatterLevelsChart"></canvas></div>
+  </div>
 </div>
 
 <!-- Users Table -->
@@ -165,12 +179,30 @@
             <small><%= user.Email %></small>
             <small>Semana <%= user.CurrentWeek || 1 %> - <%= user.CurrentActivity || 'Sin actividad' %></small>
           </div>
+          <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <span class="badge" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); padding:2px 8px; border-radius:6px; font-size:0.8rem; font-weight:600;">
+              📝 Pre: <%= user.PreTestScore != null ? Math.round(user.PreTestScore) + '%' : 'Pendiente' %>
+            </span>
+            <span class="badge" style="background:rgba(124,58,237,0.15); color:#a78bfa; padding:2px 8px; border-radius:6px; font-size:0.8rem; font-weight:600;">
+              🎓 Post: <%= user.PostTestScore != null ? Math.round(user.PostTestScore) + '%' : 'Pendiente' %>
+            </span>
+            <% if (user.EnglishLevel) { %>
+              <span class="badge" style="background:rgba(245,158,11,0.15); color:var(--accent-gold); padding:2px 8px; border-radius:6px; font-size:0.8rem; font-weight:600;">
+                Nivel <%= user.EnglishLevel %>
+              </span>
+            <% } %>
+          </div>
         </summary>
         <div class="user-details-content">
-          <div class="user-stats">
+          <div class="user-stats" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:0.75rem; background:rgba(0,0,0,0.2); padding:0.75rem; border-radius:8px; margin-bottom:1rem;">
             <div><strong>ID:</strong> <%= user.UserID %></div>
             <div><strong>XP Total:</strong> <%= user.TotalXP %> XP</div>
+            <div><strong>Nivel:</strong> Nv. <%= user.Level %></div>
             <div><strong>Racha:</strong> 🔥 <%= user.CurrentStreak %> días</div>
+            <div><strong>Pre-Test (1° Examen):</strong> <span style="color:var(--accent-cyan); font-weight:700;"><%= user.PreTestScore != null ? Math.round(user.PreTestScore) + '%' : 'Pendiente' %></span></div>
+            <div><strong>Post-Test (Último Examen):</strong> <span style="color:#a78bfa; font-weight:700;"><%= user.PostTestScore != null ? Math.round(user.PostTestScore) + '%' : 'Pendiente' %></span></div>
+            <div><strong>Nivel MCER:</strong> <%= user.EnglishLevel || 'Por definir' %></div>
+            <div><strong>Último Acceso:</strong> <%= user.LastLoginAt ? new Date(user.LastLoginAt).toLocaleDateString('es-CO') : 'Nunca' %></div>
           </div>
           <div class="action-btns">
             <a href="/admin/students/<%= user.UserID %>/detail" class="btn-icon" title="Ver Progreso Detallado" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); text-decoration:none; border-radius:6px; padding:0.4rem 0.5rem; display:inline-flex; align-items:center; justify-content:center;">👁️ Progreso</a>

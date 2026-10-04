@@ -4,6 +4,7 @@ class Message {
     static async sendMessage(senderId, receiverId, subject, text, parentId = null) {
         const query = `
             INSERT INTO Messages (SenderID, ReceiverID, Subject, MessageText, ParentMessageID)
+            OUTPUT INSERTED.MessageID
             VALUES (@SenderID, @ReceiverID, @Subject, @MessageText, @ParentMessageID)
         `;
         const params = [
@@ -13,8 +14,8 @@ class Message {
             { name: 'MessageText', type: sql.NVarChar, value: text },
             { name: 'ParentMessageID', type: sql.Int, value: parentId }
         ];
-        await executeQuery(query, params);
-        return true;
+        const result = await executeQuery(query, params);
+        return result.recordset && result.recordset[0] ? result.recordset[0].MessageID : true;
     }
 
     static async getUserMessages(userId) {
@@ -26,7 +27,7 @@ class Message {
             LEFT JOIN Users s ON m.SenderID = s.UserID
             LEFT JOIN Users r ON m.ReceiverID = r.UserID
             WHERE m.SenderID = @UserID OR m.ReceiverID = @UserID
-            ORDER BY m.CreatedAt DESC
+            ORDER BY m.CreatedAt ASC
         `;
         const params = [{ name: 'UserID', type: sql.Int, value: userId }];
         const result = await executeQuery(query, params);

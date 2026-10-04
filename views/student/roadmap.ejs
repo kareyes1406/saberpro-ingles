@@ -3,9 +3,6 @@
 <div class="roadmap-wrapper">
   <!-- Main Roadmap -->
   <div class="roadmap-container">
-    <div class="path-line"></div>
-    <div class="path-progress" id="pathProgress"></div>
-    
     <h1 style="text-align:center;margin-bottom:0.5rem;">Ruta de Aprendizaje <button id="mapInfoBtn" title="¿Cómo funciona?" style="background:rgba(124,58,237,0.2); border:2px solid var(--accent-purple, #7c3aed); color:#a78bfa; font-size:1.1rem; width:32px; height:32px; border-radius:50%; cursor:pointer; vertical-align:middle; margin-left:0.5rem; font-weight:800; transition:all 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.5)'" onmouseout="this.style.background='rgba(124,58,237,0.2)'">!</button></h1>
     <p style="text-align:center;color:var(--text-secondary);margin-bottom:2rem;">Inglés Saber Pro — 4 Semanas</p>
     
@@ -21,6 +18,8 @@
       </div>
     <% } %>
     <div class="nodes-grid">
+      <div class="path-line"></div>
+      <div class="path-progress" id="pathProgress"></div>
       <% weeks.forEach((week, index) => { %>
         <div class="week-row">
           <div class="week-node 

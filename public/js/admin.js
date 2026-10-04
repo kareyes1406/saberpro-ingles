@@ -270,6 +270,105 @@ async function loadCharts() {
                 `).join('');
             }
         }
+
+        // 9. Scatter Plot: Pre-Test vs Post-Test (MCER Level Distribution)
+        const scatterCtx = document.getElementById('scatterLevelsChart');
+        if (scatterCtx && data.scatterData) {
+            new Chart(scatterCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Primera Prueba (Pre-Test)',
+                            data: data.scatterData.preTest || [],
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1.5,
+                            pointRadius: 6,
+                            pointHoverRadius: 9
+                        },
+                        {
+                            label: 'Última Prueba (Post-Test)',
+                            data: data.scatterData.postTest || [],
+                            backgroundColor: 'rgba(168, 85, 247, 0.85)',
+                            borderColor: '#a855f7',
+                            borderWidth: 1.5,
+                            pointRadius: 7,
+                            pointHoverRadius: 10
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f8fafc', padding: 12, font: { weight: 'bold' } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#38bdf8',
+                            bodyColor: '#f8fafc',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    const raw = context.raw;
+                                    return [
+                                        `👤 ${raw.name || 'Estudiante'}`,
+                                        `📊 Puntaje: ${raw.score}%`,
+                                        `🎯 Nivel MCER: ${raw.level}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            min: 0,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Puntaje Obtenido (%)',
+                                color: '#94a3b8',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                callback: v => v + '%'
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                        },
+                        y: {
+                            min: 0.5,
+                            max: 5.5,
+                            title: {
+                                display: true,
+                                text: 'Nivel MCER Clasificado',
+                                color: '#94a3b8',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                color: '#94a3b8',
+                                callback: function(val) {
+                                    const map = {
+                                        1: 'A1 (Principiante)',
+                                        2: 'A2 (Básico)',
+                                        3: 'B1 (Intermedio)',
+                                        4: 'B2 (Intermedio Alto)',
+                                        5: 'C1 (Avanzado)'
+                                    };
+                                    return map[Math.round(val)] || '';
+                                }
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                        }
+                    }
+                }
+            });
+        }
     } catch (error) {
         console.error('Error loading charts:', error);
     }
@@ -539,6 +638,9 @@ async function exportDashboardPDF() {
 
         // Sección 2: Análisis de Competencias (Pre-test vs Módulos)
         addChartToPDF('preVsModuleChart', '2. Evolución de Competencias (Pre-Test vs Actual)', [6, 182, 212]);
+
+        // Sección 2.1: Diagrama de Dispersión MCER
+        addChartToPDF('scatterLevelsChart', '2.1 Dispersión de Niveles MCER (Pre-Test vs Post-Test)', [168, 85, 247], 90);
 
         // Sección 3: K-Means Clustering (Inteligencia Artificial)
         addChartToPDF('clusterChart', '3. Clasificación K-Means (Grupos de Rendimiento)', [245, 158, 11], 100);
