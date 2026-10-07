@@ -556,7 +556,13 @@
                     body: JSON.stringify(data)
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonErr) {
+                    showError('Error en el servidor (' + response.status + '). Por favor intenta de nuevo.');
+                    return;
+                }
                 
                 if (result.success && result.requiresPin) {
                     registeredEmail = result.email;
@@ -565,7 +571,7 @@
                     showError(result.error || 'Error desconocido.');
                 }
             } catch (error) {
-                showError('Error de conexión.');
+                showError('Error de red o conexión. Revisa tu internet e intenta de nuevo.');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Registrarme';
@@ -614,7 +620,14 @@
                     body: JSON.stringify({ email: registeredEmail, pin })
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonErr) {
+                    pinError.textContent = 'Error en el servidor (' + response.status + ').';
+                    pinError.style.display = 'block';
+                    return;
+                }
                 
                 if (result.success) {
                     document.getElementById('pinModal').classList.remove('active');
@@ -624,7 +637,7 @@
                     pinError.style.display = 'block';
                 }
             } catch (error) {
-                pinError.textContent = 'Error de conexión';
+                pinError.textContent = 'Error de red o conexión al verificar.';
                 pinError.style.display = 'block';
             } finally {
                 verifyBtn.disabled = false;

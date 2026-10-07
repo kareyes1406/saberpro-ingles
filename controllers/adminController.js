@@ -101,7 +101,55 @@ exports.listUsers = async (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        const { firstName, lastName, email, password, role } = req.body;
+        let { firstName, lastName, email, password, role } = req.body;
+        
+        if (!firstName || !lastName || !email) {
+            return res.status(400).json({ error: 'Nombre, apellido y correo electrónico son obligatorios.' });
+        }
+
+        firstName = firstName.trim();
+        lastName = lastName.trim();
+        email = email.trim().toLowerCase();
+
+        // Verificar si el correo ya existe
+        const existingUser = await User.findByEmail(email);
+        if (existingUser) {
+            if (!existingUser.IsActive) {
+                // El usuario estaba inactivo o pre-registrado: activarlo y actualizar contraseña si se proporcionó
+                const hashedPassword = password ? await bcrypt.hash(password, 10) : existingUser.PasswordHash;
+                await executeQuery(`
+                    UPDATE Users 
+                    SET FirstName = @FirstName, LastName = @LastName, 
+                        PasswordHash = @PasswordHash, IsActive = 1, UpdatedAt = GETDATE()
+                    WHERE UserID = @UserID
+                `, [
+                    { name: 'FirstName', type: sql.NVarChar, value: firstName },
+                    { name: 'LastName', type: sql.NVarChar, value: lastName },
+                    { name: 'PasswordHash', type: sql.NVarChar, value: hashedPassword },
+                    { name: 'UserID', type: sql.Int, value: existingUser.UserID }
+                ]);
+
+                // Asegurar fila de gamificación
+                const gamRes = await executeQuery('SELECT GamificationID FROM UserGamification WHERE UserID = @UserID', [
+                    { name: 'UserID', type: sql.Int, value: existingUser.UserID }
+                ]);
+                if (gamRes.recordset.length === 0) {
+                    await executeQuery(
+                        'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
+                        [{ name: 'UserID', type: sql.Int, value: existingUser.UserID }]
+                    );
+                }
+
+                return res.json({ 
+                    success: true, 
+                    message: 'El usuario ya existía inactivo. Su cuenta fue activada y actualizada exitosamente.', 
+                    user: existingUser 
+                });
+            } else {
+                return res.status(400).json({ error: `Ya existe un usuario activo con el correo ${email}.` });
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(password || 'SaberPro2026!', 10);
         
         let targetRoleId = 1; // Default: student
@@ -116,21 +164,34 @@ exports.createUser = async (req, res) => {
         }
         
         const newUser = await User.create({
-            FirstName: firstName, LastName: lastName,
-            Email: email, PasswordHash: hashedPassword, RoleID: targetRoleId
+            FirstName: firstName, 
+            LastName: lastName,
+            Email: email, 
+            PasswordHash: hashedPassword, 
+            RoleID: targetRoleId,
+            IsActive: 1
         });
         
         if (targetRoleId === 1) {
-            await executeQuery(
-                'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
-                [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
-            );
+            const gamRes = await executeQuery('SELECT GamificationID FROM UserGamification WHERE UserID = @UserID', [
+                { name: 'UserID', type: sql.Int, value: newUser.UserID }
+            ]);
+            if (gamRes.recordset.length === 0) {
+                await executeQuery(
+                    'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
+                    [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
+                );
+            }
         }
         
-        res.json({ success: true, message: targetRoleId === 1 ? 'Estudiante creado exitosamente' : 'Profesor creado exitosamente', user: newUser });
+        res.json({ 
+            success: true, 
+            message: targetRoleId === 1 ? 'Estudiante creado exitosamente' : 'Profesor creado exitosamente', 
+            user: newUser 
+        });
     } catch (error) {
         console.error('Create User Error:', error);
-        res.status(500).json({ error: 'Error al crear usuario' });
+        res.status(500).json({ error: error.message || 'Error al crear usuario' });
     }
 };
 

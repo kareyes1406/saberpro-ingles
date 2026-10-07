@@ -121,22 +121,56 @@ exports.processRegister = async (req, res) => {
         if (password.length < 8 || !/[A-Z]/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
             return returnError('La contraseña no cumple con los requisitos de seguridad');
         }
+
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanFirst = firstName.trim();
+        const cleanLast = lastName.trim();
         
-        const existingUser = await User.findByEmail(email);
+        const existingUser = await User.findByEmail(cleanEmail);
         if (existingUser) {
-            return returnError('Ya existe una cuenta con ese email');
+            if (!existingUser.IsActive) {
+                // Usuario preexistente no activado: regenerar PIN y permitir verificar
+                const hashedPassword = await bcrypt.hash(password, 10);
+                await executeQuery(`
+                    UPDATE Users 
+                    SET FirstName = @FirstName, LastName = @LastName, PasswordHash = @PasswordHash, UpdatedAt = GETDATE()
+                    WHERE UserID = @UserID
+                `, [
+                    { name: 'FirstName', type: sql.NVarChar, value: cleanFirst },
+                    { name: 'LastName', type: sql.NVarChar, value: cleanLast },
+                    { name: 'PasswordHash', type: sql.NVarChar, value: hashedPassword },
+                    { name: 'UserID', type: sql.Int, value: existingUser.UserID }
+                ]);
+
+                const pin = require('crypto').randomInt(100000, 1000000).toString();
+                await User.saveVerificationPin(existingUser.UserID, pin);
+
+                // Enviar correo sin bloquear la respuesta si hay lentitud en SMTP/proxy
+                emailService.sendVerificationPin(cleanEmail, pin).catch(err => {
+                    console.error('Error enviando PIN de verificación:', err);
+                });
+
+                return res.json({ 
+                    success: true, 
+                    requiresPin: true, 
+                    email: cleanEmail,
+                    message: 'Tu cuenta ya estaba en proceso de registro. Se ha generado un nuevo código de verificación.'
+                });
+            } else {
+                return returnError('Ya existe una cuenta activa con ese correo electrónico. Por favor inicia sesión.');
+            }
         }
         
-        const hashedPassword = await bcrypt.hash(password, 12); // Aumentado a 12
+        const hashedPassword = await bcrypt.hash(password, 10);
         
         const roleResult = await executeQuery("SELECT RoleID FROM Roles WHERE RoleName = 'student'");
         const roleId = roleResult.recordset.length > 0 ? roleResult.recordset[0].RoleID : 1;
         
         // Crear usuario INACTIVO
         const newUser = await User.create({
-            FirstName: firstName,
-            LastName: lastName,
-            Email: email,
+            FirstName: cleanFirst,
+            LastName: cleanLast,
+            Email: cleanEmail,
             PasswordHash: hashedPassword,
             RoleID: roleId,
             IsActive: 0
@@ -146,15 +180,23 @@ exports.processRegister = async (req, res) => {
         const pin = require('crypto').randomInt(100000, 1000000).toString();
         await User.saveVerificationPin(newUser.UserID, pin);
         
-        // Enviar correo electrónico al usuario que se está registrando
-        await emailService.sendVerificationPin(email, pin);
+        // Enviar correo electrónico al usuario de forma segura
+        emailService.sendVerificationPin(cleanEmail, pin).catch(err => {
+            console.error('Error enviando PIN de verificación:', err);
+        });
         
-        await executeQuery(
-            'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
-            [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
-        );
+        // Asegurar gamificación
+        const gamRes = await executeQuery('SELECT GamificationID FROM UserGamification WHERE UserID = @UserID', [
+            { name: 'UserID', type: sql.Int, value: newUser.UserID }
+        ]);
+        if (gamRes.recordset.length === 0) {
+            await executeQuery(
+                'INSERT INTO UserGamification (UserID, TotalXP, Level, CurrentStreak, LongestStreak, TotalCoins, CoinsSpent, UpdatedAt) VALUES (@UserID, 0, 1, 0, 0, 0, 0, GETDATE())',
+                [{ name: 'UserID', type: sql.Int, value: newUser.UserID }]
+            );
+        }
         
-        res.json({ success: true, requiresPin: true, email: email });
+        res.json({ success: true, requiresPin: true, email: cleanEmail });
         
     } catch (error) {
         console.error('Register Error:', error);

@@ -39,11 +39,20 @@ const config = {
 let pool = null;
 
 async function getPool() {
-    if (!pool) {
+    if (!pool || !pool.connected) {
         try {
+            if (pool) {
+                try { await pool.close(); } catch(e) {}
+                pool = null;
+            }
             pool = await sql.connect(config);
+            pool.on('error', err => {
+                console.error('[DB POOL ERROR]', err);
+                pool = null;
+            });
             console.log('Connected to Azure SQL Server successfully.');
         } catch (err) {
+            pool = null;
             console.error('Database connection failed:', err);
             throw err;
         }

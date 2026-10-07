@@ -2,12 +2,15 @@ const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
     secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.SMTP_USER, 
         pass: process.env.SMTP_PASS, 
     },
+    connectionTimeout: 7000, // 7 segundos máx para conectar (evita colgar el servidor con proxies)
+    greetingTimeout: 7000,
+    socketTimeout: 10000,
 });
 
 exports.sendVerificationPin = async (to, pin) => {
@@ -22,7 +25,7 @@ exports.sendVerificationPin = async (to, pin) => {
     }
 
     try {
-        await transporter.sendMail({
+        const mailPromise = transporter.sendMail({
             from: '"SaberPro Inglés" <' + process.env.SMTP_USER + '>',
             to: to,
             subject: '🔑 Código de Verificación - SaberPro Inglés',
@@ -41,10 +44,18 @@ exports.sendVerificationPin = async (to, pin) => {
                 </div>
             `
         });
+
+        // Limitar la espera a 8 segundos máximo para evitar "Error de red" por timeout de proxy
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('SMTP timeout: el servidor de correo tardó más de 8s')), 8000)
+        );
+
+        await Promise.race([mailPromise, timeoutPromise]);
         console.log(`✅ [EMAIL ENVIADO] Código de verificación enviado a: ${to}`);
         return true;
     } catch (error) {
-        console.error('Error enviando email:', error);
+        console.error('⚠️ [ADVERTENCIA EMAIL] No se pudo enviar el correo a:', to, error.message);
+        console.log(`🔑 PIN de respaldo generado en servidor para ${to}: ${pin}`);
         return false;
     }
 };

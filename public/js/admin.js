@@ -486,17 +486,23 @@ async function submitUserForm() {
 
         if (result.success) {
             btn.textContent = '¡Guardado!';
-            btn.style.backgroundColor = 'green';
-            setTimeout(() => { location.reload(); }, 500);
+            btn.style.backgroundColor = '#10b981';
+            if (result.message && result.message.includes('activada')) {
+                alert('✅ ' + result.message);
+            }
+            setTimeout(() => { location.reload(); }, 600);
         } else {
-            btn.textContent = 'Error: ' + (result.error || 'Desconocido');
-            btn.style.backgroundColor = 'red';
-            setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = ''; btn.disabled = false; }, 4000);
+            const errorMsg = result.error || 'Error al guardar usuario.';
+            alert('⚠️ ' + errorMsg);
+            btn.textContent = 'Error al guardar';
+            btn.style.backgroundColor = '#ef4444';
+            setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = ''; btn.disabled = false; }, 3000);
         }
     } catch (error) {
         console.error('Submit error:', error);
+        alert('⚠️ Error de conexión con el servidor. Revisa tu conexión a internet.');
         btn.textContent = 'Error: Red/Desconexión';
-        btn.style.backgroundColor = 'red';
+        btn.style.backgroundColor = '#ef4444';
         setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = ''; btn.disabled = false; }, 4000);
     }
 }
