@@ -478,9 +478,21 @@ async function submitUserForm() {
         try {
             result = await response.json();
         } catch(e) {
-            btn.textContent = 'Error: 500 Server Crash';
-            btn.style.backgroundColor = 'red';
+            if (response.status === 401) {
+                alert('⚠️ Tu sesión ha expirado. Por favor inicia sesión de nuevo.');
+                window.location.href = '/auth/login';
+                return;
+            }
+            alert(`⚠️ El servidor respondió con estado ${response.status}. Si la aplicación se está actualizando, espera unos segundos.`);
+            btn.textContent = 'Error al procesar';
+            btn.style.backgroundColor = '#ef4444';
             setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = ''; btn.disabled = false; }, 4000);
+            return;
+        }
+
+        if (response.status === 401 || result.sessionExpired) {
+            alert('⚠️ Tu sesión de administrador ha expirado. Redirigiendo al login...');
+            window.location.href = '/auth/login';
             return;
         }
 

@@ -107,6 +107,13 @@ app.use(session({
 app.use(flash());
 
 // ── Middleware de Autenticación ──────────────────────────────────────
+const isAjaxOrApi = (req) => {
+    return req.xhr || 
+           req.headers['content-type'] === 'application/json' || 
+           (req.headers.accept && req.headers.accept.includes('application/json')) ||
+           req.method !== 'GET';
+};
+
 /**
  * requireAuth - Verifica que el usuario tenga sesión activa
  * Se aplica a rutas /student y /game
@@ -114,6 +121,9 @@ app.use(flash());
 const requireAuth = (req, res, next) => {
     if (req.session && req.session.userId) {
         return next();
+    }
+    if (isAjaxOrApi(req)) {
+        return res.status(401).json({ success: false, error: 'Sesión expirada. Por favor recarga la página e inicia sesión.', sessionExpired: true });
     }
     req.flash('error', 'Debes iniciar sesión para acceder a esta sección.');
     res.redirect('/auth/login');
@@ -127,6 +137,9 @@ const requireAdmin = (req, res, next) => {
     if (req.session && req.session.userId && req.session.role === 'admin') {
         return next();
     }
+    if (isAjaxOrApi(req)) {
+        return res.status(401).json({ success: false, error: 'Sesión de administrador expirada o no autorizada. Por favor inicia sesión de nuevo.', sessionExpired: true });
+    }
     req.flash('error', 'Acceso restringido a administradores.');
     res.redirect('/auth/login');
 };
@@ -138,6 +151,9 @@ const requireAdmin = (req, res, next) => {
 const requireProfessor = (req, res, next) => {
     if (req.session && req.session.userId && req.session.role === 'professor') {
         return next();
+    }
+    if (isAjaxOrApi(req)) {
+        return res.status(401).json({ success: false, error: 'Sesión de profesor expirada o no autorizada. Por favor inicia sesión de nuevo.', sessionExpired: true });
     }
     req.flash('error', 'Acceso restringido a profesores.');
     res.redirect('/auth/login');
@@ -200,6 +216,12 @@ app.use((req, res) => {
 // ── 500 — Error del Servidor ─────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error('[ERROR 500]', err.stack);
+    if (isAjaxOrApi(req)) {
+        return res.status(500).json({
+            success: false,
+            error: err.message || 'Error interno del servidor. Por favor intenta de nuevo.'
+        });
+    }
     res.status(500).send(`
         <!DOCTYPE html>
         <html lang="es">
