@@ -9,9 +9,7 @@ const { executeQuery, sql } = require('../config/database');
 
 exports.showLogin = (req, res) => {
     res.render('auth/login', { 
-        title: 'Iniciar Sesión',
-        error: req.flash('error'),
-        success_msg: req.flash('success_msg')
+        title: 'Iniciar Sesión'
     });
 };
 
@@ -24,9 +22,11 @@ exports.processLogin = async (req, res) => {
             req.flash('error', 'Por favor ingresa email y contraseña');
             return res.redirect('/auth/login');
         }
+
+        const cleanEmail = email.trim().toLowerCase();
         
         // Find user in DB
-        const user = await User.findByEmail(email);
+        const user = await User.findByEmail(cleanEmail);
         if (!user) {
             req.flash('error', 'Credenciales inválidas');
             return res.redirect('/auth/login');
@@ -76,28 +76,39 @@ exports.processLogin = async (req, res) => {
             };
             req.session.role = roleName;
             
-            // Redirect based on role
-            if (roleName === 'admin') {
-                return res.redirect('/admin/dashboard');
-            }
-            if (roleName === 'professor') {
-                return res.redirect('/professor/dashboard');
-            }
-            return res.redirect('/student');
+            // Guardar sesión explícitamente antes de redirigir para evitar race conditions
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error('Session save error:', saveErr);
+                    req.flash('error', 'Error al guardar la sesión. Intenta de nuevo.');
+                    return res.redirect('/auth/login');
+                }
+                
+                // Redirect based on role
+                if (roleName === 'admin') {
+                    return res.redirect('/admin/dashboard');
+                }
+                if (roleName === 'professor') {
+                    return res.redirect('/professor/dashboard');
+                }
+                return res.redirect('/student');
+            });
         });
         
     } catch (error) {
         console.error('Login Error:', error);
-        req.flash('error', 'Error en el servidor. Intenta de nuevo.');
+        if (error.message && (error.message.includes('monthly free amount allowance') || error.message.includes('paused for the remainder of the month'))) {
+            req.flash('error', 'La base de datos de Azure se encuentra pausada temporalmente por haber alcanzado el límite gratuito mensual. Debe reactivarse desde el portal de Azure.');
+        } else {
+            req.flash('error', 'Error en el servidor o de conexión con la base de datos. Intenta de nuevo.');
+        }
         res.redirect('/auth/login');
     }
 };
 
 exports.showRegister = (req, res) => {
     res.render('auth/register', {
-        title: 'Registro',
-        error: req.flash('error'),
-        success_msg: req.flash('success_msg')
+        title: 'Registro'
     });
 };
 

@@ -12,8 +12,9 @@ class User {
      * @param {string} email
      */
     static async findByEmail(email) {
-        const query = `SELECT * FROM Users WHERE Email = @Email`;
-        const params = [{ name: 'Email', type: sql.NVarChar, value: email }];
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const query = `SELECT * FROM Users WHERE LOWER(LTRIM(RTRIM(Email))) = @Email`;
+        const params = [{ name: 'Email', type: sql.NVarChar, value: cleanEmail }];
         const result = await executeQuery(query, params);
         return result.recordset[0] || null;
     }

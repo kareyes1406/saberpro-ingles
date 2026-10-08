@@ -53,7 +53,11 @@ async function getPool() {
             console.log('Connected to Azure SQL Server successfully.');
         } catch (err) {
             pool = null;
-            console.error('Database connection failed:', err);
+            if (err.message && err.message.includes('monthly free amount allowance')) {
+                console.error('⚠️ [AZURE SQL PAUSADA] La base de datos superó el cupo mensual gratuito (vCore-seconds de Azure) y se encuentra pausada hasta fin de mes o reactivación en el portal de Azure.');
+            } else {
+                console.error('Database connection failed:', err);
+            }
             throw err;
         }
     }

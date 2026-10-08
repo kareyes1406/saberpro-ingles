@@ -87,7 +87,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 // ── Sesiones ─────────────────────────────────────────────────────────
 app.use(session({
@@ -96,9 +96,9 @@ app.use(session({
     saveUninitialized: false,
     name: 'sessionId', // No usar el default connect.sid
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: 'auto', // Asegura compatibilidad tanto en HTTPS como en proxies HTTP
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Permite que la cookie viaje correctamente en redirecciones tras POST
         maxAge: 24 * 60 * 60 * 1000 // 24 horas
     }
 }));
@@ -110,8 +110,7 @@ app.use(flash());
 const isAjaxOrApi = (req) => {
     return req.xhr || 
            req.headers['content-type'] === 'application/json' || 
-           (req.headers.accept && req.headers.accept.includes('application/json')) ||
-           req.method !== 'GET';
+           (req.headers.accept && req.headers.accept.includes('application/json'));
 };
 
 /**

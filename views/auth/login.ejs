@@ -419,12 +419,17 @@
         </div>
 
         <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-            <% error.forEach(msg => { %>
+            <% (Array.isArray(error) ? error : [error]).forEach(msg => { %>
+                <div class="flash-error">⚠️ <%= msg %></div>
+            <% }); %>
+        <% } %>
+        <% if (typeof error_msg !== 'undefined' && error_msg && error_msg.length > 0) { %>
+            <% (Array.isArray(error_msg) ? error_msg : [error_msg]).forEach(msg => { %>
                 <div class="flash-error">⚠️ <%= msg %></div>
             <% }); %>
         <% } %>
         <% if (typeof success_msg !== 'undefined' && success_msg && success_msg.length > 0) { %>
-            <% success_msg.forEach(msg => { %>
+            <% (Array.isArray(success_msg) ? success_msg : [success_msg]).forEach(msg => { %>
                 <div class="flash-success">✅ <%= msg %></div>
             <% }); %>
         <% } %>
@@ -446,6 +451,7 @@
                         </svg>
                     </button>
                 </div>
+            </div>
             <div class="form-options">
                 <a href="#" id="forgotPasswordLink" style="color: var(--cyan); text-decoration: none; font-weight: 500;">¿Olvidaste tu contraseña?</a>
             </div>
