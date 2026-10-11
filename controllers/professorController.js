@@ -111,7 +111,7 @@ class ProfessorController {
                 FROM ModuleWeeks MW
                 INNER JOIN Activities A ON MW.WeekID = A.WeekID
                 INNER JOIN UserProgress UP ON A.ActivityID = UP.ActivityID
-                WHERE MW.ModuleID = 1 AND UP.IsCompleted = 1
+                WHERE MW.ModuleID = 1 AND MW.WeekNumber BETWEEN 1 AND 4 AND UP.IsCompleted = 1
                 GROUP BY MW.WeekNumber ORDER BY MW.WeekNumber
             `);
             
@@ -132,14 +132,28 @@ class ProfessorController {
                 ORDER BY ActivityDate
             `);
 
+            // Pre-Test scores by competency
             const preTestAvgs = await executeQuery(`
                 SELECT 
                     AVG(VocabularyScore) as AvgVocab,
                     AVG(ReadingScore) as AvgReading,
                     AVG(PragmaticsScore) as AvgPragmatics,
                     AVG(GrammarScore) as AvgGrammar,
-                    AVG(TotalScore) as AvgTotal
+                    AVG(TotalScore) as AvgTotal,
+                    COUNT(*) as ExamCount
                 FROM UserExams WHERE ExamType = 'PRE'
+            `);
+
+            // Post-Test scores by competency
+            const postTestAvgs = await executeQuery(`
+                SELECT 
+                    AVG(VocabularyScore) as AvgVocab,
+                    AVG(ReadingScore) as AvgReading,
+                    AVG(PragmaticsScore) as AvgPragmatics,
+                    AVG(GrammarScore) as AvgGrammar,
+                    AVG(TotalScore) as AvgTotal,
+                    COUNT(*) as ExamCount
+                FROM UserExams WHERE ExamType = 'POST'
             `);
 
             const moduleAvgs = await executeQuery(`
@@ -204,7 +218,7 @@ class ProfessorController {
                 };
             }).filter(Boolean);
             
-            // NEW: Scatter plot data (Pre-Test vs Post-Test student level distribution)
+            // Scatter plot data (Pre-Test vs Post-Test student level distribution y trayectorias)
             const scatterExamsQuery = await executeQuery(`
                 SELECT 
                     U.UserID,
@@ -223,6 +237,7 @@ class ProfessorController {
                 ) UE_POST ON U.UserID = UE_POST.UserID AND UE_POST.rn = 1
                 WHERE R.RoleName = 'student' AND U.IsActive = 1
                   AND (UE_PRE.TotalScore IS NOT NULL OR UE_POST.TotalScore IS NOT NULL)
+                ORDER BY U.FirstName, U.LastName
             `);
 
             function classifyMCER(score) {
@@ -235,32 +250,54 @@ class ProfessorController {
 
             const preTestScatter = [];
             const postTestScatter = [];
+            const studentTrajectories = [];
 
             scatterExamsQuery.recordset.forEach(s => {
-                if (s.PreScore !== null && s.PreScore !== undefined) {
+                const hasPre = s.PreScore !== null && s.PreScore !== undefined;
+                const hasPost = s.PostScore !== null && s.PostScore !== undefined;
+                const jitter = ((s.UserID % 7) - 3) * 0.04;
+
+                let prePoint = null;
+                let postPoint = null;
+
+                if (hasPre) {
                     const score = Math.round(parseFloat(s.PreScore));
                     const lvl = classifyMCER(score);
-                    const jitter = ((s.UserID % 7) - 3) * 0.04;
-                    preTestScatter.push({
+                    prePoint = {
                         x: score,
                         y: lvl.val + jitter,
+                        userId: s.UserID,
                         name: s.FullName,
                         level: lvl.level,
-                        score: score
-                    });
+                        score: score,
+                        stage: 'Pre-Test'
+                    };
+                    preTestScatter.push(prePoint);
                 }
-                if (s.PostScore !== null && s.PostScore !== undefined) {
+
+                if (hasPost) {
                     const score = Math.round(parseFloat(s.PostScore));
                     const lvl = classifyMCER(score);
-                    const jitter = ((s.UserID % 7) - 3) * 0.04;
-                    postTestScatter.push({
+                    postPoint = {
                         x: score,
                         y: lvl.val + jitter,
+                        userId: s.UserID,
                         name: s.FullName,
                         level: lvl.level,
-                        score: score
-                    });
+                        score: score,
+                        stage: 'Post-Test'
+                    };
+                    postTestScatter.push(postPoint);
                 }
+
+                studentTrajectories.push({
+                    userId: s.UserID,
+                    name: s.FullName,
+                    pre: prePoint,
+                    post: postPoint,
+                    diffScore: (hasPre && hasPost) ? (postPoint.score - prePoint.score) : null,
+                    hasBoth: hasPre && hasPost
+                });
             });
 
             res.json({
@@ -268,7 +305,8 @@ class ProfessorController {
                 weeklyTime: weeklyTime.recordset,
                 effectiveness: effectiveness.recordset,
                 dailyActivity: dailyActivity.recordset,
-                preTestAvgs: preTestAvgs.recordset[0],
+                preTestAvgs: preTestAvgs.recordset[0] || {},
+                postTestAvgs: postTestAvgs.recordset[0] || {},
                 moduleAvgs: moduleAvgs.recordset,
                 xpDistribution: xpDistribution.recordset,
                 topStudents: topStudents.recordset,
@@ -276,7 +314,8 @@ class ProfessorController {
                 clusteredStudents,
                 scatterData: {
                     preTest: preTestScatter,
-                    postTest: postTestScatter
+                    postTest: postTestScatter,
+                    students: studentTrajectories
                 }
             });
         } catch (error) {

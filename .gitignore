@@ -6,3 +6,4 @@ dist/
 coverage/
 database/backup_data/
 database/backup_tesis_complete.sql
+test-report/

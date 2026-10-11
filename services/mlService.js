@@ -223,20 +223,27 @@ class MLService {
             });
         }
 
-        // Etiquetar clusters según el puntaje promedio de cada cluster
+        // Etiquetar clusters según el rendimiento compuesto de cada cluster (Score + XP)
         const clusterScores = Array.from({ length: k }, (_, ci) => {
             const members = students.filter((_, i) => assignments[i] === ci);
             const avgScore = members.length > 0 ? members.reduce((s, m) => s + (m.avgScore || 0), 0) / members.length : 0;
-            return { ci, avgScore };
-        }).sort((a, b) => a.avgScore - b.avgScore); // Ordenar de menor a mayor score
+            const avgXP = members.length > 0 ? members.reduce((s, m) => s + (m.totalXP || 0), 0) / members.length : 0;
+            // Ponderación: 65% puntaje promedio + 35% compromiso por XP
+            const compositeRank = (avgScore * 0.65) + ((Math.min(avgXP, 2000) / 2000) * 35);
+            return { ci, avgScore, avgXP, compositeRank };
+        }).sort((a, b) => a.compositeRank - b.compositeRank); // Ordenar de menor a mayor rendimiento
+
+        // Configuración de nombres y colores garantizados sin duplicados
+        const CLUSTER_CONFIGS = [
+            { name: 'En Riesgo 🚨', color: '#ef4444' },          // Rank 0: Menor rendimiento / inactivos
+            { name: 'Rendimiento Medio ⚡', color: '#f59e0b' },   // Rank 1: Intermedio / en progreso
+            { name: 'Alto Rendimiento 🏆', color: '#10b981' }    // Rank 2: Mayor rendimiento / destacados
+        ];
 
         const clusterMap = {};
-        clusterScores.forEach(({ ci, avgScore }, rank) => {
-            let name, color;
-            if (avgScore >= 75) { name = 'Alto Rendimiento ✅'; color = '#10b981'; }
-            else if (avgScore >= 60) { name = 'En Progreso ⚠️'; color = '#f59e0b'; }
-            else { name = 'En Riesgo 🚨'; color = '#ef4444'; }
-            clusterMap[ci] = { name: `${name}`, color };
+        clusterScores.forEach(({ ci }, rank) => {
+            const conf = CLUSTER_CONFIGS[Math.min(rank, CLUSTER_CONFIGS.length - 1)];
+            clusterMap[ci] = { name: conf.name, color: conf.color };
         });
 
         // Calcular métricas por cluster (inercia, tamaño)

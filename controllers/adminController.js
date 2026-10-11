@@ -240,18 +240,18 @@ exports.getKPIData = async (req, res) => {
             FROM ModuleWeeks MW
             LEFT JOIN Activities A ON MW.WeekID = A.WeekID
             LEFT JOIN UserProgress UP ON A.ActivityID = UP.ActivityID
-            WHERE MW.ModuleID = 1
+            WHERE MW.ModuleID = 1 AND MW.WeekNumber BETWEEN 1 AND 4
             GROUP BY MW.WeekNumber
             ORDER BY MW.WeekNumber
         `);
         
-        // Average time per evaluation per week
+        // Average time per evaluation per week (semanas activas 1 a 4)
         const weeklyTime = await executeQuery(`
             SELECT MW.WeekNumber, AVG(UP.TimeSpentSeconds) as AvgTime
             FROM ModuleWeeks MW
             INNER JOIN Activities A ON MW.WeekID = A.WeekID
             INNER JOIN UserProgress UP ON A.ActivityID = UP.ActivityID
-            WHERE MW.ModuleID = 1 AND UP.IsCompleted = 1
+            WHERE MW.ModuleID = 1 AND MW.WeekNumber BETWEEN 1 AND 4 AND UP.IsCompleted = 1
             GROUP BY MW.WeekNumber ORDER BY MW.WeekNumber
         `);
         
@@ -274,18 +274,31 @@ exports.getKPIData = async (req, res) => {
             ORDER BY ActivityDate
         `);
 
-        // NEW: Pre-Test scores by competency (average across all students)
+        // Pre-Test scores by competency (promedios diagnósticos grupales)
         const preTestAvgs = await executeQuery(`
             SELECT 
                 AVG(VocabularyScore) as AvgVocab,
                 AVG(ReadingScore) as AvgReading,
                 AVG(PragmaticsScore) as AvgPragmatics,
                 AVG(GrammarScore) as AvgGrammar,
-                AVG(TotalScore) as AvgTotal
+                AVG(TotalScore) as AvgTotal,
+                COUNT(*) as ExamCount
             FROM UserExams WHERE ExamType = 'PRE'
         `);
 
-        // NEW: Module progress average scores by competency (to compare with pre-test)
+        // Post-Test scores by competency (promedios finales grupales)
+        const postTestAvgs = await executeQuery(`
+            SELECT 
+                AVG(VocabularyScore) as AvgVocab,
+                AVG(ReadingScore) as AvgReading,
+                AVG(PragmaticsScore) as AvgPragmatics,
+                AVG(GrammarScore) as AvgGrammar,
+                AVG(TotalScore) as AvgTotal,
+                COUNT(*) as ExamCount
+            FROM UserExams WHERE ExamType = 'POST'
+        `);
+
+        // Module progress average scores by competency
         const moduleAvgs = await executeQuery(`
             SELECT AT.TypeName, AVG(UP.Score) as AvgScore
             FROM UserProgress UP
@@ -295,7 +308,7 @@ exports.getKPIData = async (req, res) => {
             GROUP BY AT.TypeName
         `);
 
-        // NEW: XP Level distribution
+        // XP Level distribution
         const xpDistribution = await executeQuery(`
             SELECT UG.Level, COUNT(*) as StudentCount
             FROM UserGamification UG
@@ -306,7 +319,7 @@ exports.getKPIData = async (req, res) => {
             ORDER BY UG.Level
         `);
 
-        // NEW: Top 10 students by XP
+        // Top 10 students by XP
         const topStudents = await executeQuery(`
             SELECT TOP 10 U.FirstName + ' ' + U.LastName as FullName, UG.TotalXP, UG.Level
             FROM UserGamification UG
@@ -316,7 +329,7 @@ exports.getKPIData = async (req, res) => {
             ORDER BY UG.TotalXP DESC
         `);
 
-        // NEW: K-Means Clustering — prepare data for all students
+        // K-Means Clustering — prepare data for all students
         const studentsForClustering = await executeQuery(`
             SELECT 
                 U.UserID, U.FirstName + ' ' + U.LastName as FullName,
@@ -351,7 +364,7 @@ exports.getKPIData = async (req, res) => {
             };
         }).filter(Boolean);
         
-        // NEW: Scatter plot data (Pre-Test vs Post-Test student level distribution)
+        // Scatter plot data (Pre-Test vs Post-Test student level distribution e individual evolution)
         const scatterExamsQuery = await executeQuery(`
             SELECT 
                 U.UserID,
@@ -370,6 +383,7 @@ exports.getKPIData = async (req, res) => {
             ) UE_POST ON U.UserID = UE_POST.UserID AND UE_POST.rn = 1
             WHERE R.RoleName = 'student' AND U.IsActive = 1
               AND (UE_PRE.TotalScore IS NOT NULL OR UE_POST.TotalScore IS NOT NULL)
+            ORDER BY U.FirstName, U.LastName
         `);
 
         function classifyMCER(score) {
@@ -382,32 +396,54 @@ exports.getKPIData = async (req, res) => {
 
         const preTestScatter = [];
         const postTestScatter = [];
+        const studentTrajectories = [];
 
         scatterExamsQuery.recordset.forEach(s => {
-            if (s.PreScore !== null && s.PreScore !== undefined) {
+            const hasPre = s.PreScore !== null && s.PreScore !== undefined;
+            const hasPost = s.PostScore !== null && s.PostScore !== undefined;
+            const jitter = ((s.UserID % 7) - 3) * 0.04;
+
+            let prePoint = null;
+            let postPoint = null;
+
+            if (hasPre) {
                 const score = Math.round(parseFloat(s.PreScore));
                 const lvl = classifyMCER(score);
-                const jitter = ((s.UserID % 7) - 3) * 0.04;
-                preTestScatter.push({
+                prePoint = {
                     x: score,
                     y: lvl.val + jitter,
+                    userId: s.UserID,
                     name: s.FullName,
                     level: lvl.level,
-                    score: score
-                });
+                    score: score,
+                    stage: 'Pre-Test'
+                };
+                preTestScatter.push(prePoint);
             }
-            if (s.PostScore !== null && s.PostScore !== undefined) {
+
+            if (hasPost) {
                 const score = Math.round(parseFloat(s.PostScore));
                 const lvl = classifyMCER(score);
-                const jitter = ((s.UserID % 7) - 3) * 0.04;
-                postTestScatter.push({
+                postPoint = {
                     x: score,
                     y: lvl.val + jitter,
+                    userId: s.UserID,
                     name: s.FullName,
                     level: lvl.level,
-                    score: score
-                });
+                    score: score,
+                    stage: 'Post-Test'
+                };
+                postTestScatter.push(postPoint);
             }
+
+            studentTrajectories.push({
+                userId: s.UserID,
+                name: s.FullName,
+                pre: prePoint,
+                post: postPoint,
+                diffScore: (hasPre && hasPost) ? (postPoint.score - prePoint.score) : null,
+                hasBoth: hasPre && hasPost
+            });
         });
 
         res.json({
@@ -415,7 +451,8 @@ exports.getKPIData = async (req, res) => {
             weeklyTime: weeklyTime.recordset,
             effectiveness: effectiveness.recordset,
             dailyActivity: dailyActivity.recordset,
-            preTestAvgs: preTestAvgs.recordset[0],
+            preTestAvgs: preTestAvgs.recordset[0] || {},
+            postTestAvgs: postTestAvgs.recordset[0] || {},
             moduleAvgs: moduleAvgs.recordset,
             xpDistribution: xpDistribution.recordset,
             topStudents: topStudents.recordset,
@@ -423,7 +460,8 @@ exports.getKPIData = async (req, res) => {
             clusteredStudents,
             scatterData: {
                 preTest: preTestScatter,
-                postTest: postTestScatter
+                postTest: postTestScatter,
+                students: studentTrajectories
             }
         });
     } catch (error) {

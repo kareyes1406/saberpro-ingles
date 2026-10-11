@@ -63,8 +63,8 @@
 <h2 style="margin: 2rem 0 1rem; font-size: 1.3rem; color: var(--accent-cyan); display:flex; align-items:center; gap:0.5rem;">🔬 Analítica Avanzada</h2>
 <div class="charts-grid">
   <div class="chart-card">
-    <h3>Pre-Test vs Módulos — Comparativo de Competencias</h3>
-    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:0.5rem;">Promedio grupal: Puntaje Pre-Test vs Desempeño en Módulos</p>
+    <h3>Pre-Test vs Post-Test — Comparativo de Competencias</h3>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:0.5rem;">Promedio grupal: Diagnóstico Inicial (Pre-Test) vs Evaluación Final (Post-Test)</p>
     <div class="chart-container"><canvas id="preVsModuleChart"></canvas></div>
   </div>
   <div class="chart-card">
@@ -89,10 +89,32 @@
       <div style="display:flex; gap:1rem; font-size:0.85rem; align-items:center; flex-wrap:wrap;">
         <span style="display:inline-flex; align-items:center; gap:0.35rem; color:#06b6d4; font-weight:600;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#06b6d4;"></span> Primera Prueba (Pre-Test)</span>
         <span style="display:inline-flex; align-items:center; gap:0.35rem; color:#a855f7; font-weight:600;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a855f7;"></span> Última Prueba (Post-Test)</span>
+        <span style="display:inline-flex; align-items:center; gap:0.35rem; color:#f59e0b; font-weight:600;"><span style="display:inline-block; width:14px; height:3px; background:#f59e0b; border-radius:2px;"></span> Trayectoria de Evolución</span>
       </div>
     </div>
-    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0; margin-bottom:1rem;">Visualización de dispersión y agrupación de estudiantes según puntaje obtenido (eje horizontal) y nivel MCER alcanzado (eje vertical: A1 a C1). Permite contrastar de forma directa el diagnóstico inicial contra el examen final.</p>
-    <div class="chart-container" style="height:350px;"><canvas id="scatterLevelsChart"></canvas></div>
+    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0; margin-bottom:0.75rem;">Visualización de dispersión y agrupación según puntaje (eje horizontal) y nivel MCER alcanzado (eje vertical: A1 a C1). Haz clic en cualquier punto del gráfico o selecciona un estudiante en el menú desplegable para rastrear su línea de evolución individual.</p>
+    
+    <!-- Controles interactivos de selección y trayectoria -->
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-bottom:0.75rem; background:rgba(255,255,255,0.03); padding:0.6rem 0.9rem; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+      <label for="scatterStudentFilter" style="font-size:0.85rem; font-weight:600; color:#94a3b8; display:flex; align-items:center; gap:0.35rem;">
+        🔍 <span>Ver trayectoria de estudiante:</span>
+      </label>
+      <select id="scatterStudentFilter" style="background:#1e293b; color:#f8fafc; border:1px solid #334155; padding:0.4rem 0.8rem; border-radius:6px; font-size:0.85rem; min-width:280px; outline:none; cursor:pointer;">
+        <option value="">-- Todos los estudiantes (o haz clic en un punto) --</option>
+      </select>
+      <button id="btnResetScatter" type="button" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.15); padding:0.4rem 0.85rem; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:600; transition:all 0.2s;">
+        ↺ Ver Todos
+      </button>
+      <span style="margin-left:auto; font-size:0.8rem; color:#94a3b8;">
+        💡 Tip: Puedes hacer clic directamente sobre cualquier punto en el gráfico
+      </span>
+    </div>
+
+    <!-- Tarjeta informativa de evolución individual (dinámica) -->
+    <div id="scatterStudentCard" style="display:none; margin-bottom:0.75rem; padding:0.75rem 1rem; border-radius:8px; background:linear-gradient(90deg, rgba(6,182,212,0.1) 0%, rgba(168,85,247,0.1) 100%); border:1px solid rgba(245,158,11,0.4);">
+    </div>
+
+    <div class="chart-container" style="height:360px;"><canvas id="scatterLevelsChart"></canvas></div>
   </div>
 </div>
 

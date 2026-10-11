@@ -20,17 +20,18 @@ async function loadCharts() {
         const response = await fetch(kpiUrl);
         const data = await response.json();
         
-        // 1. Completion Rate per Week (Line Chart)
+        // 1. Completion Rate per Week (Line Chart) - Limitado a 4 semanas activas
         const completionCtx = document.getElementById('completionChart');
         if (completionCtx) {
+            const activeWeeks = 4;
             new Chart(completionCtx, {
                 type: 'line',
                 data: {
-                    labels: Array.from({length: 12}, (_, i) => `Sem ${i + 1}`),
+                    labels: Array.from({length: activeWeeks}, (_, i) => `Sem ${i + 1}`),
                     datasets: [{
                         label: 'Tasa de Finalización (%)',
-                        data: Array.from({length: 12}, (_, i) => {
-                            const week = data.weeklyCompletion.find(w => w.WeekNumber === i + 1);
+                        data: Array.from({length: activeWeeks}, (_, i) => {
+                            const week = (data.weeklyCompletion || []).find(w => w.WeekNumber === i + 1);
                             if (!week || !week.TotalStudents) return 0;
                             return Math.round((week.CompletedUsers / week.TotalStudents) * 100);
                         }),
@@ -38,14 +39,16 @@ async function loadCharts() {
                         backgroundColor: 'rgba(124, 58, 237, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
                         x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     },
                     plugins: { legend: { labels: { color: '#f8fafc' } } }
@@ -53,19 +56,21 @@ async function loadCharts() {
             });
         }
         
-        // 2. Average Time per Week (Bar Chart)
+        // 2. Average Time per Week (Bar Chart) - Limitado a 4 semanas activas
         const timeCtx = document.getElementById('timeChart');
         if (timeCtx) {
+            const filteredWeeklyTime = (data.weeklyTime || []).filter(w => w.WeekNumber <= 4);
             new Chart(timeCtx, {
                 type: 'bar',
                 data: {
-                    labels: data.weeklyTime.map(w => `Sem ${w.WeekNumber}`),
+                    labels: filteredWeeklyTime.map(w => `Sem ${w.WeekNumber}`),
                     datasets: [{
                         label: 'Tiempo Promedio (seg)',
-                        data: data.weeklyTime.map(w => Math.round(w.AvgTime || 0)),
+                        data: filteredWeeklyTime.map(w => Math.round(w.AvgTime || 0)),
                         backgroundColor: 'rgba(6, 182, 212, 0.6)',
                         borderColor: '#06b6d4',
-                        borderWidth: 1
+                        borderWidth: 1,
+                        borderRadius: 6
                     }]
                 },
                 options: {
@@ -133,48 +138,60 @@ async function loadCharts() {
             });
         }
 
-        // 5. Pre-Test vs Módulos (Grouped Bar Chart)
+        // 5. Pre-Test vs Post-Test — Comparativo de Competencias (Grouped Bar Chart)
         const preVsCtx = document.getElementById('preVsModuleChart');
-        if (preVsCtx && data.preTestAvgs) {
+        if (preVsCtx) {
             const preAvgs = data.preTestAvgs || {};
-            const moduleMap = {};
-            (data.moduleAvgs || []).forEach(m => { moduleMap[m.TypeName] = parseFloat(m.AvgScore || 0); });
+            const postAvgs = data.postTestAvgs || {};
 
             new Chart(preVsCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Vocabulario', 'Comprensión Lectora', 'Avisos y Diálogos', 'Gramática'],
+                    labels: ['Vocabulario', 'Comprensión Lectora', 'Avisos y Diálogos', 'Gramática', 'Promedio General'],
                     datasets: [
                         {
-                            label: 'Pre-Test',
+                            label: `Pre-Test (${preAvgs.TotalExams || 0} est.)`,
                             data: [
                                 Math.round(preAvgs.AvgVocab || 0),
                                 Math.round(preAvgs.AvgReading || 0),
                                 Math.round(preAvgs.AvgPragmatics || 0),
-                                Math.round(preAvgs.AvgGrammar || 0)
+                                Math.round(preAvgs.AvgGrammar || 0),
+                                Math.round(preAvgs.AvgTotal || 0)
                             ],
-                            backgroundColor: 'rgba(124, 58, 237, 0.6)',
-                            borderColor: 'rgba(124, 58, 237, 1)',
-                            borderWidth: 2
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 2,
+                            borderRadius: 6
                         },
                         {
-                            label: 'Módulos (Promedio Actual)',
+                            label: `Post-Test (${postAvgs.TotalExams || 0} est.)`,
                             data: [
-                                Math.round(moduleMap['Vocabulary'] || 0),
-                                Math.round(moduleMap['Reading'] || 0),
-                                Math.round(moduleMap['Pragmatics'] || 0),
-                                Math.round(moduleMap['Grammar'] || 0)
+                                Math.round(postAvgs.AvgVocab || 0),
+                                Math.round(postAvgs.AvgReading || 0),
+                                Math.round(postAvgs.AvgPragmatics || 0),
+                                Math.round(postAvgs.AvgGrammar || 0),
+                                Math.round(postAvgs.AvgTotal || 0)
                             ],
-                            backgroundColor: 'rgba(6, 182, 212, 0.6)',
-                            borderColor: 'rgba(6, 182, 212, 1)',
-                            borderWidth: 2
+                            backgroundColor: 'rgba(168, 85, 247, 0.75)',
+                            borderColor: '#a855f7',
+                            borderWidth: 2,
+                            borderRadius: 6
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc', font: { weight: 'bold' } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return `${ctx.dataset.label}: ${ctx.parsed.y}%`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
                         y: { min: 0, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
@@ -271,16 +288,20 @@ async function loadCharts() {
             }
         }
 
-        // 9. Scatter Plot: Pre-Test vs Post-Test (MCER Level Distribution)
+        // 9. Scatter Plot: Pre-Test vs Post-Test (MCER Level Distribution e Interactivo con Trayectorias)
         const scatterCtx = document.getElementById('scatterLevelsChart');
         if (scatterCtx && data.scatterData) {
-            new Chart(scatterCtx, {
+            const preData = data.scatterData.preTest || [];
+            const postData = data.scatterData.postTest || [];
+            const studentsList = data.scatterData.students || [];
+
+            const scatterChart = new Chart(scatterCtx, {
                 type: 'scatter',
                 data: {
                     datasets: [
                         {
                             label: 'Primera Prueba (Pre-Test)',
-                            data: data.scatterData.preTest || [],
+                            data: preData,
                             backgroundColor: 'rgba(6, 182, 212, 0.75)',
                             borderColor: '#06b6d4',
                             borderWidth: 1.5,
@@ -289,18 +310,42 @@ async function loadCharts() {
                         },
                         {
                             label: 'Última Prueba (Post-Test)',
-                            data: data.scatterData.postTest || [],
+                            data: postData,
                             backgroundColor: 'rgba(168, 85, 247, 0.85)',
                             borderColor: '#a855f7',
                             borderWidth: 1.5,
                             pointRadius: 7,
                             pointHoverRadius: 10
+                        },
+                        {
+                            label: 'Trayectoria de Evolución',
+                            data: [],
+                            showLine: true,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                            borderWidth: 3,
+                            borderDash: [6, 4],
+                            pointRadius: 8,
+                            pointHoverRadius: 11,
+                            pointBackgroundColor: '#f59e0b',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (elements && elements.length > 0) {
+                            const first = elements[0];
+                            const dataset = scatterChart.data.datasets[first.datasetIndex];
+                            const point = dataset.data[first.index];
+                            if (point && point.userId) {
+                                selectStudent(point.userId);
+                            }
+                        }
+                    },
                     plugins: {
                         legend: {
                             labels: { color: '#f8fafc', padding: 12, font: { weight: 'bold' } }
@@ -315,10 +360,19 @@ async function loadCharts() {
                             callbacks: {
                                 label: function(context) {
                                     const raw = context.raw;
+                                    if (context.datasetIndex === 2) {
+                                        return [
+                                            `📈 Trayectoria: ${raw.name || 'Estudiante'}`,
+                                            `🎯 Etapa: ${raw.stage || ''}`,
+                                            `📊 Puntaje: ${raw.score}%`,
+                                            `🏅 Nivel MCER: ${raw.level}`
+                                        ];
+                                    }
                                     return [
                                         `👤 ${raw.name || 'Estudiante'}`,
                                         `📊 Puntaje: ${raw.score}%`,
-                                        `🎯 Nivel MCER: ${raw.level}`
+                                        `🎯 Nivel MCER: ${raw.level}`,
+                                        `📝 Etapa: ${raw.stage || (context.datasetIndex === 0 ? 'Pre-Test' : 'Post-Test')}`
                                     ];
                                 }
                             }
@@ -368,6 +422,123 @@ async function loadCharts() {
                     }
                 }
             });
+
+            // Poblar dropdown de selección y eventos
+            const studentSelect = document.getElementById('scatterStudentFilter');
+            const studentCard = document.getElementById('scatterStudentCard');
+            const btnReset = document.getElementById('btnResetScatter');
+
+            if (studentSelect && studentsList.length > 0) {
+                const sorted = [...studentsList].sort((a, b) => a.name.localeCompare(b.name));
+                sorted.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.userId;
+                    let extra = '';
+                    if (s.hasBoth) {
+                        const sign = s.diffScore >= 0 ? '+' : '';
+                        extra = `(Pre: ${s.pre.score}% → Post: ${s.post.score}% | Δ ${sign}${s.diffScore}%)`;
+                    } else if (s.pre) {
+                        extra = `(Pre: ${s.pre.score}% | Pendiente Post-Test)`;
+                    } else if (s.post) {
+                        extra = `(Post: ${s.post.score}% | Sin Pre-Test)`;
+                    }
+                    opt.textContent = `${s.name} ${extra}`;
+                    studentSelect.appendChild(opt);
+                });
+            }
+
+            function selectStudent(userId) {
+                if (!userId) {
+                    scatterChart.data.datasets[2].data = [];
+                    scatterChart.update();
+                    if (studentSelect) studentSelect.value = '';
+                    if (studentCard) studentCard.style.display = 'none';
+                    return;
+                }
+
+                const s = studentsList.find(item => String(item.userId) === String(userId));
+                if (!s) return;
+
+                if (studentSelect) studentSelect.value = String(userId);
+
+                const trajectoryPoints = [];
+                if (s.pre) trajectoryPoints.push(s.pre);
+                if (s.post) trajectoryPoints.push(s.post);
+
+                scatterChart.data.datasets[2].data = trajectoryPoints;
+                scatterChart.update();
+
+                if (studentCard) {
+                    studentCard.style.display = 'block';
+                    if (s.hasBoth) {
+                        const isGain = s.diffScore >= 0;
+                        const badgeColor = isGain ? '#10b981' : '#ef4444';
+                        const badgeBg = isGain ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                        const icon = isGain ? '📈 +' : '📉 ';
+                        studentCard.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                                <div>
+                                    <span style="font-size:1.05rem; font-weight:700; color:#f8fafc;">👤 ${s.name}</span>
+                                    <span style="font-size:0.8rem; color:#94a3b8; margin-left:0.5rem;">(ID #${s.userId})</span>
+                                </div>
+                                <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                                    <span style="background:rgba(6,182,212,0.15); color:#06b6d4; border:1px solid rgba(6,182,212,0.3); padding:0.3rem 0.75rem; border-radius:6px; font-size:0.85rem; font-weight:600;">
+                                        📝 Pre-Test: <strong>${s.pre.score}%</strong> (${s.pre.level})
+                                    </span>
+                                    <span style="color:#f59e0b; font-weight:800; font-size:1.1rem;">➔</span>
+                                    <span style="background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); padding:0.3rem 0.75rem; border-radius:6px; font-size:0.85rem; font-weight:600;">
+                                        🎓 Post-Test: <strong>${s.post.score}%</strong> (${s.post.level})
+                                    </span>
+                                    <span style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}; padding:0.3rem 0.75rem; border-radius:6px; font-size:0.85rem; font-weight:700;">
+                                        ${icon}${s.diffScore}% Evolución
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    } else if (s.pre) {
+                        studentCard.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                                <div>
+                                    <span style="font-size:1.05rem; font-weight:700; color:#f8fafc;">👤 ${s.name}</span>
+                                    <span style="font-size:0.8rem; color:#94a3b8; margin-left:0.5rem;">(ID #${s.userId})</span>
+                                </div>
+                                <div style="display:flex; gap:0.75rem; align-items:center;">
+                                    <span style="background:rgba(6,182,212,0.15); color:#06b6d4; border:1px solid rgba(6,182,212,0.3); padding:0.3rem 0.75rem; border-radius:6px; font-size:0.85rem; font-weight:600;">
+                                        📝 Pre-Test: <strong>${s.pre.score}%</strong> (${s.pre.level})
+                                    </span>
+                                    <span style="color:#94a3b8; font-size:0.85rem; font-style:italic;">
+                                        ⏳ Aún no presenta la evaluación final (Post-Test)
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    } else if (s.post) {
+                        studentCard.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                                <div>
+                                    <span style="font-size:1.05rem; font-weight:700; color:#f8fafc;">👤 ${s.name}</span>
+                                    <span style="font-size:0.8rem; color:#94a3b8; margin-left:0.5rem;">(ID #${s.userId})</span>
+                                </div>
+                                <div style="display:flex; gap:0.75rem; align-items:center;">
+                                    <span style="background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); padding:0.3rem 0.75rem; border-radius:6px; font-size:0.85rem; font-weight:600;">
+                                        🎓 Post-Test: <strong>${s.post.score}%</strong> (${s.post.level})
+                                    </span>
+                                    <span style="color:#94a3b8; font-size:0.85rem; font-style:italic;">
+                                        ℹ️ No cuenta con registro de Pre-Test inicial
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            if (studentSelect) {
+                studentSelect.addEventListener('change', (e) => selectStudent(e.target.value));
+            }
+            if (btnReset) {
+                btnReset.addEventListener('click', () => selectStudent(''));
+            }
         }
     } catch (error) {
         console.error('Error loading charts:', error);
@@ -654,8 +825,8 @@ async function exportDashboardPDF() {
             yPos += height + 15;
         };
 
-        // Sección 2: Análisis de Competencias (Pre-test vs Módulos)
-        addChartToPDF('preVsModuleChart', '2. Evolución de Competencias (Pre-Test vs Actual)', [6, 182, 212]);
+        // Sección 2: Análisis de Competencias (Pre-Test vs Post-Test)
+        addChartToPDF('preVsModuleChart', '2. Evolución de Competencias (Pre-Test vs Post-Test)', [6, 182, 212]);
 
         // Sección 2.1: Diagrama de Dispersión MCER
         addChartToPDF('scatterLevelsChart', '2.1 Dispersión de Niveles MCER (Pre-Test vs Post-Test)', [168, 85, 247], 90);
